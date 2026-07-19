@@ -1,0 +1,24 @@
+services:
+  embyproxy:
+    image: ghcr.io/hkfires/embyproxy:latest
+    container_name: ${CONTAINER_NAME}
+    restart: unless-stopped
+    networks:
+      - 1panel-network
+    ports:
+      # 宿主机端口可改；容器内固定监听 8787
+      - ${PANEL_APP_PORT_HTTP}:8787
+    volumes:
+      - ./data:/app/data
+    environment:
+      ADMIN_TOKEN: ${ADMIN_TOKEN}
+      # 容器内监听端口固定，避免与端口映射不一致
+      PORT: "8787"
+      DB_PATH: ./data/proxy.db
+      TZ: ${TZ}
+    labels:
+      createdBy: Apps
+
+networks:
+  1panel-network:
+    external: true

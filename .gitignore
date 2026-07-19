@@ -1,0 +1,21 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+.idea/
+.vscode/
+
+# Secrets / runtime (never commit)
+.env
+.env.*
+**/*.db
+**/proxy.db
+
+# Local install leftovers
+**/data/*
+!**/data/.gitkeep
+
+# Session / temp
+.grok/
+*.log

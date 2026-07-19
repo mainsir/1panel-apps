@@ -1,0 +1,35 @@
+name: 3proxy
+tags:
+  - Tool
+title: 3proxy
+description: Tiny free proxy server (HTTP / SOCKS5)
+
+additionalProperties:
+  key: 3proxy
+  name: 3proxy
+  tags:
+    - Tool
+  shortDescZh: 轻量 HTTP/SOCKS5 代理服务
+  shortDescEn: Lightweight HTTP/SOCKS5 proxy server
+  type: tool
+  crossVersionUpdate: true
+  limit: 0
+  recommend: 0
+  website: https://3proxy.org/
+  github: https://github.com/3proxy/3proxy
+  document: https://github.com/tarampampam/3proxy-docker
+  description:
+    en: Lightweight HTTP and SOCKS5 proxy server based on 3proxy
+    zh: 基于 3proxy 的轻量 HTTP / SOCKS5 代理服务
+    zh-Hant: 基於 3proxy 的輕量 HTTP / SOCKS5 代理服務
+    ja: 3proxy ベースの軽量 HTTP / SOCKS5 プロキシ
+    ko: 3proxy 기반 경량 HTTP/SOCKS5 프록시
+    ru: Легкий HTTP/SOCKS5 прокси на базе 3proxy
+    es-es: Proxy HTTP/SOCKS5 ligero basado en 3proxy
+    pt-br: Proxy HTTP/SOCKS5 leve baseado em 3proxy
+    ms: Proksi HTTP/SOCKS5 ringan berasaskan 3proxy
+    tr: 3proxy tabanli hafif HTTP/SOCKS5 proxy
+  architectures:
+    - amd64
+    - arm64
+    - arm/v7

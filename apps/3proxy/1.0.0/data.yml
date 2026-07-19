@@ -1,0 +1,61 @@
+additionalProperties:
+  formFields:
+    - default: 3128
+      edit: true
+      envKey: PANEL_APP_PORT_HTTP
+      labelZh: HTTP 代理端口
+      labelEn: HTTP Proxy Port
+      required: true
+      rule: paramPort
+      type: number
+
+    - default: 1080
+      edit: true
+      envKey: PANEL_APP_PORT_SOCKS
+      labelZh: SOCKS5 端口
+      labelEn: SOCKS5 Port
+      required: true
+      rule: paramPort
+      type: number
+
+    - default: proxy
+      edit: true
+      envKey: PROXY_LOGIN
+      labelZh: 代理账号
+      labelEn: Proxy Username
+      required: true
+      rule: paramCommon
+      type: text
+
+    - default: changeme
+      edit: true
+      envKey: PROXY_PASSWORD
+      labelZh: 代理密码
+      labelEn: Proxy Password
+      required: true
+      random: true
+      type: password
+
+    - default: "1.0.0.1"
+      edit: true
+      envKey: PRIMARY_RESOLVER
+      labelZh: 主 DNS
+      labelEn: Primary DNS
+      required: true
+      type: text
+
+    - default: "8.8.8.8"
+      edit: true
+      envKey: SECONDARY_RESOLVER
+      labelZh: 备 DNS
+      labelEn: Secondary DNS
+      required: true
+      type: text
+
+    - default: 512
+      edit: true
+      envKey: MAX_CONNECTIONS
+      labelZh: 最大连接数
+      labelEn: Max Connections
+      required: true
+      type: number

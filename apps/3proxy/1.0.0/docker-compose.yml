@@ -1,0 +1,29 @@
+services:
+  3proxy:
+    image: ghcr.io/tarampampam/3proxy:2
+    container_name: ${CONTAINER_NAME}
+    restart: unless-stopped
+    networks:
+      - 1panel-network
+    ports:
+      - ${PANEL_APP_PORT_HTTP}:3128/tcp
+      - ${PANEL_APP_PORT_SOCKS}:1080/tcp
+    environment:
+      PROXY_LOGIN: ${PROXY_LOGIN}
+      PROXY_PASSWORD: ${PROXY_PASSWORD}
+      PROXY_PORT: 3128
+      SOCKS_PORT: 1080
+      PRIMARY_RESOLVER: ${PRIMARY_RESOLVER}
+      SECONDARY_RESOLVER: ${SECONDARY_RESOLVER}
+      MAX_CONNECTIONS: ${MAX_CONNECTIONS}
+      LOG_OUTPUT: /dev/stdout
+    ulimits:
+      nofile:
+        soft: 2048
+        hard: 2048
+    labels:
+      createdBy: Apps
+
+networks:
+  1panel-network:
+    external: true

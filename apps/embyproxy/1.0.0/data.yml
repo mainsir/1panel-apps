@@ -1,0 +1,27 @@
+additionalProperties:
+  formFields:
+    - default: 8787
+      edit: true
+      envKey: PANEL_APP_PORT_HTTP
+      labelZh: Web 端口
+      labelEn: Web Port
+      required: true
+      rule: paramPort
+      type: number
+
+    - default: change-this-token
+      edit: true
+      envKey: ADMIN_TOKEN
+      labelZh: 管理 Token
+      labelEn: Admin Token
+      required: true
+      random: true
+      type: password
+
+    - default: Asia/Shanghai
+      edit: true
+      envKey: TZ
+      labelZh: 时区
+      labelEn: Timezone
+      required: true
+      type: text
