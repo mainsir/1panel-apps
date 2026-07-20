@@ -1,0 +1,34 @@
+name: Karakeep
+tags:
+  - Tool
+title: Karakeep
+description: Self-hostable bookmark manager with AI tagging and full-text search
+
+additionalProperties:
+  key: karakeep
+  name: Karakeep
+  tags:
+    - Tool
+  shortDescZh: 自托管书签/稍后读，支持 AI 打标与全文搜索
+  shortDescEn: Self-hosted bookmarks with AI tagging and search
+  type: website
+  crossVersionUpdate: true
+  limit: 0
+  recommend: 0
+  website: https://karakeep.app
+  github: https://github.com/karakeep-app/karakeep
+  document: https://docs.karakeep.app/installation/docker/
+  description:
+    en: Self-hostable bookmark manager with AI tagging, archiving and full-text search
+    zh: 自托管书签与稍后读应用，支持页面抓取归档、AI 自动打标与全文搜索
+    zh-Hant: 自託管書籤與稍後讀應用，支援頁面抓取歸檔、AI 自動打標與全文搜尋
+    ja: ブックマークと後で読むアプリ。AI タグ付けと全文検索に対応
+    ko: AI 태깅과 전문 검색을 지원하는 셀프호스트 북마크 앱
+    ru: Самохостинг менеджер закладок с AI-тегами и полнотекстовым поиском
+    es-es: Gestor de marcadores autoalojado con etiquetado AI y busqueda
+    pt-br: Gerenciador de favoritos auto-hospedado com tags AI e busca
+    ms: Pengurus penanda buku hos sendiri dengan penandaan AI dan carian
+    tr: AI etiketleme ve tam metin arama destekli self-host yer imi yoneticisi
+  architectures:
+    - amd64
+    - arm64

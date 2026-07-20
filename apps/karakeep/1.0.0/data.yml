@@ -1,0 +1,79 @@
+additionalProperties:
+  formFields:
+    - default: 3000
+      edit: true
+      envKey: PANEL_APP_PORT_HTTP
+      labelZh: Web 端口
+      labelEn: Web Port
+      required: true
+      rule: paramPort
+      type: number
+
+    - default: http://localhost:3000
+      edit: true
+      envKey: NEXTAUTH_URL
+      labelZh: 访问地址（NEXTAUTH_URL）
+      labelEn: Public URL (NEXTAUTH_URL)
+      required: true
+      rule: paramExtUrl
+      type: text
+
+    - default: change-me-nextauth-secret
+      edit: true
+      envKey: NEXTAUTH_SECRET
+      labelZh: NextAuth 密钥
+      labelEn: NextAuth Secret
+      required: true
+      random: true
+      type: password
+
+    - default: change-me-meili-master-key
+      edit: true
+      envKey: MEILI_MASTER_KEY
+      labelZh: Meilisearch 主密钥
+      labelEn: Meilisearch Master Key
+      required: true
+      random: true
+      type: password
+
+    - default: "false"
+      edit: true
+      envKey: DISABLE_SIGNUPS
+      labelZh: 禁止新用户注册
+      labelEn: Disable Signups
+      required: true
+      type: select
+      values:
+        - label: 允许注册
+          value: "false"
+        - label: 禁止注册
+          value: "true"
+
+    - default: "true"
+      edit: true
+      envKey: DB_WAL_MODE
+      labelZh: SQLite WAL 模式
+      labelEn: SQLite WAL Mode
+      required: true
+      type: select
+      values:
+        - label: 开启（推荐）
+          value: "true"
+        - label: 关闭
+          value: "false"
+
+    - default: ""
+      edit: true
+      envKey: OPENAI_API_KEY
+      labelZh: OpenAI API Key（可选，用于 AI 打标）
+      labelEn: OpenAI API Key (optional)
+      required: false
+      type: password
+
+    - default: Asia/Shanghai
+      edit: true
+      envKey: TZ
+      labelZh: 时区
+      labelEn: Timezone
+      required: true
+      type: text

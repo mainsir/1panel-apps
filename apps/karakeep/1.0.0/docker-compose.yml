@@ -1,0 +1,64 @@
+services:
+  web:
+    image: ghcr.io/karakeep-app/karakeep:release
+    container_name: ${CONTAINER_NAME}
+    restart: unless-stopped
+    networks:
+      - 1panel-network
+    ports:
+      - ${PANEL_APP_PORT_HTTP}:3000
+    volumes:
+      - ./data:/data
+    environment:
+      DATA_DIR: /data
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      MEILI_ADDR: http://meilisearch:7700
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+      BROWSER_WEB_URL: http://chrome:9222
+      DISABLE_SIGNUPS: ${DISABLE_SIGNUPS}
+      DB_WAL_MODE: ${DB_WAL_MODE}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      TZ: ${TZ}
+    depends_on:
+      - chrome
+      - meilisearch
+    labels:
+      createdBy: Apps
+
+  chrome:
+    image: gcr.io/zenika-hub/alpine-chrome:124
+    container_name: ${CONTAINER_NAME}-chrome
+    restart: unless-stopped
+    networks:
+      - 1panel-network
+    command:
+      - --no-sandbox
+      - --disable-gpu
+      - --disable-dev-shm-usage
+      - --remote-debugging-address=0.0.0.0
+      - --remote-debugging-port=9222
+      - --hide-scrollbars
+      - --disable-blink-features=AutomationControlled
+      - --window-size=1440,900
+    shm_size: 2gb
+    labels:
+      createdBy: Apps
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.41.0
+    container_name: ${CONTAINER_NAME}-meilisearch
+    restart: unless-stopped
+    networks:
+      - 1panel-network
+    environment:
+      MEILI_NO_ANALYTICS: "true"
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+    volumes:
+      - ./meili_data:/meili_data
+    labels:
+      createdBy: Apps
+
+networks:
+  1panel-network:
+    external: true
