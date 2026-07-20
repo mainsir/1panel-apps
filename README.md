@@ -13,16 +13,32 @@
 
 默认 1Panel 安装路径为 `/opt/1panel`，请按实际路径调整。
 
-### 方式一：直接拷贝
+### 方式一：临时目录一键同步（推荐手动）
+
+每次重新 clone 最新代码，拷贝后清理临时目录：
 
 ```bash
-git clone https://github.com/mainsir/1panel-apps.git /tmp/1panel-apps
-cp -rf /tmp/1panel-apps/apps/* /opt/1panel/resource/apps/local/
+rm -rf /tmp/1panel-apps \
+  && git clone --depth 1 https://github.com/mainsir/1panel-apps.git /tmp/1panel-apps \
+  && mkdir -p /opt/1panel/resource/apps/local \
+  && cp -rf /tmp/1panel-apps/apps/* /opt/1panel/resource/apps/local/ \
+  && rm -rf /tmp/1panel-apps
 ```
+
+说明：
+
+- **clone 前** `rm -rf`：避免目录已存在导致 clone 失败，并保证拉到最新
+- **clone / cp**：下载并写入 1Panel 本地应用目录
+- **cp 后** `rm -rf`：清理 `/tmp`，与是否最新无关，只是打扫现场
 
 然后在 1Panel：**应用商店 → 更新应用列表**，在「本地」分类中安装。
 
-### 方式二：计划任务同步
+> `cp -rf` 只会覆盖/新增本仓库里的应用。若仓库已删除某个 app（例如 karakeep），服务器上需手动删掉对应目录：  
+> `rm -rf /opt/1panel/resource/apps/local/<app-key>`
+
+### 方式二：计划任务同步（长期目录 + pull）
+
+适合定时任务，不必每次全量 clone：
 
 ```bash
 #!/bin/bash
@@ -41,7 +57,9 @@ cp -rf "$REPO_DIR"/apps/* "$LOCAL_DIR"/
 echo "synced at $(date)"
 ```
 
-将以上脚本加入 1Panel 计划任务（例如每天一次），同步后手动或脚本触发「更新应用列表」。
+也可直接用仓库脚本：`bash scripts/sync-to-1panel.sh`。
+
+将脚本加入 1Panel 计划任务（例如每天一次），同步后手动或脚本触发「更新应用列表」。
 
 ## 目录结构
 
