@@ -1,6 +1,6 @@
 services:
   kasmweb-chrome:
-    image: kasmweb/chrome:1.16.0
+    image: kasmweb/chrome:1.19.0
     container_name: ${CONTAINER_NAME}
     restart: always
     shm_size: 1g
