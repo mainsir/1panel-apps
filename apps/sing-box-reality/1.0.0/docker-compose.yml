@@ -1,0 +1,23 @@
+services:
+  sing-box-reality:
+    image: ghcr.io/sagernet/sing-box:v1.13.14
+    container_name: ${CONTAINER_NAME}
+    restart: always
+    network_mode: host
+    working_dir: /data
+    volumes:
+      - ./data:/data
+      - ./scripts/entrypoint.sh:/entrypoint.sh:ro
+    environment:
+      TZ: ${TZ}
+      PANEL_APP_PORT_TCP: ${PANEL_APP_PORT_TCP}
+      REALITY_SNI: ${REALITY_SNI}
+      REALITY_DEST: ${REALITY_DEST}
+      REALITY_DEST_PORT: ${REALITY_DEST_PORT}
+      PUBLIC_HOST: ${PUBLIC_HOST}
+      UUID: ${UUID}
+      FINGERPRINT: ${FINGERPRINT}
+      LINK_NAME: ${LINK_NAME}
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    labels:
+      createdBy: Apps

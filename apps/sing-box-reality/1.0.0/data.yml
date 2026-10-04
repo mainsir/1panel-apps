@@ -1,0 +1,90 @@
+additionalProperties:
+  formFields:
+    - default: 38443
+      edit: true
+      envKey: PANEL_APP_PORT_TCP
+      labelZh: Reality 监听端口
+      labelEn: Reality listen port
+      required: true
+      rule: paramPort
+      type: number
+
+    - default: www.nvidia.com
+      edit: true
+      envKey: REALITY_SNI
+      labelZh: 伪装域名 (SNI)
+      labelEn: Camouflage SNI
+      required: true
+      type: text
+
+    - default: www.nvidia.com
+      edit: true
+      envKey: REALITY_DEST
+      labelZh: Reality 握手网站
+      labelEn: Reality handshake server
+      required: true
+      type: text
+
+    - default: 443
+      edit: true
+      envKey: REALITY_DEST_PORT
+      labelZh: 握手网站端口
+      labelEn: Handshake server port
+      required: true
+      rule: paramPort
+      type: number
+
+    - default: ""
+      edit: true
+      envKey: PUBLIC_HOST
+      labelZh: 客户端连接地址(IP或域名)
+      labelEn: Public host for client links
+      required: false
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: UUID
+      labelZh: UUID(留空则自动生成)
+      labelEn: UUID (empty = auto)
+      required: false
+      type: text
+
+    - default: chrome
+      edit: true
+      envKey: FINGERPRINT
+      labelZh: 客户端 uTLS 指纹
+      labelEn: Client uTLS fingerprint
+      required: true
+      type: select
+      values:
+        - label: chrome
+          value: chrome
+        - label: firefox
+          value: firefox
+        - label: safari
+          value: safari
+        - label: ios
+          value: ios
+        - label: android
+          value: android
+        - label: edge
+          value: edge
+        - label: random
+          value: random
+
+    - default: SingBox-Reality
+      edit: true
+      envKey: LINK_NAME
+      labelZh: 分享链接备注名
+      labelEn: Share link name
+      required: true
+      type: text
+
+    - default: Asia/Shanghai
+      edit: true
+      envKey: TZ
+      labelZh: 时区
+      labelEn: Timezone
+      required: true
+      type: text

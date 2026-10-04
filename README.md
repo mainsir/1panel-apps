@@ -7,7 +7,7 @@
 | 应用 | 说明 | 版本 |
 |---|---|---|
 | [3proxy](./apps/3proxy) | 轻量 HTTP / SOCKS5 代理（环境变量配置） | 1.0.0 |
-| [embyproxy](./apps/embyproxy) | Emby 代理服务 | 1.0.0 |
+| [sing-box-reality](./apps/sing-box-reality) | 基于 sing-box 的 VLESS Reality 入站（host 网络） | 1.0.0 |
 
 ## 安装到 1Panel（本地应用）
 
@@ -81,7 +81,7 @@ apps/<app-key>/
 
 - 仓库只放**应用定义包**（compose / data.yml / README），不包含运行时数据与真实密钥。
 - 安装时在面板表单中填写端口、密码、Token 等。
-- 网络默认使用 bridge + `1panel-network`，不是 host 模式（除非应用另有说明）。
+- 网络默认使用 bridge + `1panel-network`；`sing-box-reality` 因需直接监听宿主机端口使用 host 模式。
 
 ## License
 

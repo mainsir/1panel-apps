@@ -1,0 +1,25 @@
+name: VLESS Reality
+tags:
+  - Tool
+title: VLESS Reality
+description: VLESS Reality inbound based on sing-box
+
+additionalProperties:
+  key: sing-box-reality
+  name: VLESS Reality
+  tags:
+    - Tool
+  shortDescZh: 基于 sing-box 的 VLESS Reality 入站服务
+  shortDescEn: VLESS Reality inbound service based on sing-box
+  type: tool
+  crossVersionUpdate: true
+  limit: 1
+  recommend: 0
+  website: https://sing-box.sagernet.org/
+  github: https://github.com/SagerNet/sing-box
+  document: https://sing-box.sagernet.org/configuration/
+  description:
+    en: Provides a VLESS inbound with Reality TLS via sing-box for Docker and 1Panel deployment
+    zh: 基于 sing-box 提供 VLESS 协议与 Reality TLS 入站能力，适用于 Docker / 1Panel 部署
+  architectures:
+    - amd64

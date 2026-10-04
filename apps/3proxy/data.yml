@@ -21,14 +21,6 @@ additionalProperties:
   description:
     en: Lightweight HTTP and SOCKS5 proxy server based on 3proxy
     zh: 基于 3proxy 的轻量 HTTP / SOCKS5 代理服务
-    zh-Hant: 基於 3proxy 的輕量 HTTP / SOCKS5 代理服務
-    ja: 3proxy ベースの軽量 HTTP / SOCKS5 プロキシ
-    ko: 3proxy 기반 경량 HTTP/SOCKS5 프록시
-    ru: Легкий HTTP/SOCKS5 прокси на базе 3proxy
-    es-es: Proxy HTTP/SOCKS5 ligero basado en 3proxy
-    pt-br: Proxy HTTP/SOCKS5 leve baseado em 3proxy
-    ms: Proksi HTTP/SOCKS5 ringan berasaskan 3proxy
-    tr: 3proxy tabanli hafif HTTP/SOCKS5 proxy
   architectures:
     - amd64
     - arm64
