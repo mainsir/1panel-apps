@@ -1,0 +1,25 @@
+name: Gitea SQLite版
+tags:
+  - DevOps
+title: 轻量 Git 代码托管（SQLite 单容器版）
+description: 轻量 Git 代码托管（SQLite 单容器版）
+additionalProperties:
+  key: gitea-sqlite
+  name: Gitea SQLite版
+  tags:
+    - DevOps
+  shortDescZh: 轻量 Git 代码托管，SQLite 单容器，无需 MySQL
+  shortDescEn: Lightweight Git hosting, single container with SQLite, no MySQL needed
+  description:
+    zh: Gitea 轻量代码托管平台 SQLite 单容器版本，无需安装 MySQL，1C1G 小内存服务器也能流畅运行，个人开发者自建首选
+    en: Lightweight Gitea code hosting in a single container with SQLite. No MySQL required, runs smoothly even on 1C1G servers.
+  type: tool
+  crossVersionUpdate: true
+  limit: 0
+  recommend: 0
+  website: https://gitea.io/
+  github: https://github.com/go-gitea/gitea
+  document: https://docs.gitea.io/
+  architectures:
+    - amd64
+    - arm64

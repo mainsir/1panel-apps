@@ -7,6 +7,8 @@
 | 应用 | 说明 | 版本 |
 |---|---|---|
 | [3proxy](./apps/3proxy) | 轻量 HTTP / SOCKS5 代理（环境变量配置） | 1.0.0 |
+| [gitea-sqlite](./apps/gitea-sqlite) | 轻量 Git 代码托管（SQLite 单容器，无需 MySQL） | 1.27.3 |
+| [kasmweb-chrome](./apps/kasmweb-chrome) | Web 端高清 Chrome 浏览器（KasmVNC 串流，支持数据持久化） | 1.16.0 |
 | [sing-box-reality](./apps/sing-box-reality) | 基于 sing-box 的 VLESS Reality 入站（host 网络） | 1.0.0 |
 
 ## 安装到 1Panel（本地应用）

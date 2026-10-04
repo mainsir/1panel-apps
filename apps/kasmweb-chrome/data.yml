@@ -1,0 +1,25 @@
+name: Kasm Chrome
+tags:
+  - Tool
+title: 基于 KasmVNC 的云端 Web 浏览器（支持完整数据持久化）
+description: 基于 KasmVNC 的云端 Web 浏览器（支持完整数据持久化）
+
+additionalProperties:
+  key: kasmweb-chrome
+  name: Kasm Chrome
+  tags:
+    - Tool
+  shortDescZh: Web 端高清流畅 Chrome 浏览器，支持数据持久化
+  shortDescEn: Browser-based Chrome desktop powered by KasmVNC with persistence
+  type: tool
+  crossVersionUpdate: true
+  limit: 0
+  recommend: 0
+  website: https://kasmweb.com/
+  github: https://github.com/kasmtech/workspaces-core-images
+  document: https://kasmweb.com/docs/latest/
+  description:
+    en: Secure, high-performance browser-accessible Chrome desktop via KasmVNC WebRTC streaming with full profile and downloads persistence.
+    zh: 基于 KasmVNC WebRTC 超低延迟串流的 Web 端 Chrome 浏览器，支持音频播放、双向剪贴板同步及完整书签、插件数据持久化。
+  architectures:
+    - amd64

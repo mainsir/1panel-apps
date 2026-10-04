@@ -1,0 +1,25 @@
+services:
+  gitea:
+    image: gitea/gitea:1.27.3
+    container_name: ${CONTAINER_NAME}
+    restart: always
+    networks:
+      - 1panel-network
+    volumes:
+      - ./data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - ${PANEL_APP_PORT_HTTP}:3000
+      - ${PANEL_APP_PORT_SSH}:22
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - GITEA__database__DB_TYPE=sqlite3
+      - GITEA__database__PATH=/data/gitea/gitea.db
+    labels:
+      createdBy: "Apps"
+
+networks:
+  1panel-network:
+    external: true

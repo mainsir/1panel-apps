@@ -1,0 +1,36 @@
+additionalProperties:
+  formFields:
+    - default: 6901
+      edit: true
+      envKey: PANEL_APP_PORT_HTTPS
+      labelEn: HTTPS Port
+      labelZh: HTTPS 访问端口
+      required: true
+      rule: paramPort
+      type: number
+
+    - default: kasm_password
+      edit: true
+      envKey: VNC_PW
+      labelEn: Login Password
+      labelZh: 登录密码
+      random: true
+      required: true
+      rule: paramComplexity
+      type: password
+
+    - default: https://www.google.com
+      edit: true
+      envKey: LAUNCH_URL
+      labelEn: Launch URL
+      labelZh: 默认打开网址
+      required: false
+      type: text
+
+    - default: Asia/Shanghai
+      edit: true
+      envKey: TZ
+      labelEn: Timezone
+      labelZh: 时区
+      required: true
+      type: text
