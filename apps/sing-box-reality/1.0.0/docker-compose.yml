@@ -22,6 +22,8 @@ services:
       SOCKS5_PORT: ${SOCKS5_PORT}
       SOCKS5_USER: ${SOCKS5_USER}
       SOCKS5_PASS: ${SOCKS5_PASS}
+      CLASH_API_PORT: ${CLASH_API_PORT}
+      CLASH_API_SECRET: ${CLASH_API_SECRET}
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     labels:
       createdBy: Apps
