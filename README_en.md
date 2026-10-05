@@ -1,20 +1,8 @@
 # 1Panel Community Apps Store
 
-<p align="center">
-  <img src="https://1panel.cn/img/logo/logo-1panel.png" width="80" alt="1Panel Logo" />
-</p>
+Curated, high-quality, ready-to-use local app store for 1Panel. Follows official specifications with data persistence and one-command synchronization.
 
-<p align="center">
-  <strong>Curated, High-Quality, Ready-to-Use Local App Store for 1Panel</strong><br>
-  Official Spec Compliant · Data Persistence · One-Command Sync · Production Ready
-</p>
-
-<p align="center">
-  <a href="https://github.com/mainsir/1panel-apps/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License" /></a>
-  <a href="https://github.com/mainsir/1panel-apps/pulls"><img src="https://img.shields.io/badge/PRs-Welcome-brightgreen.svg" alt="PRs Welcome" /></a>
-  <img src="https://img.shields.io/badge/1Panel-Local%20Apps-orange.svg" alt="1Panel Compatible" />
-  <img src="https://img.shields.io/badge/Apps-4%2B-blueviolet.svg" alt="Apps Count" />
-</p>
+[简体中文](./README.md) · [Packaging Specification](./1Panel本地应用制作规范.md)
 
 ---
 

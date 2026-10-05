@@ -1,20 +1,8 @@
-# 1Panel 第三方本地应用商店 (1Panel Community Apps)
+# 1Panel 第三方本地应用商店
 
-<p align="center">
-  <img src="https://1panel.cn/img/logo/logo-1panel.png" width="80" alt="1Panel Logo" />
-</p>
+精选、高质量、开箱即用的 1Panel 本地扩展应用市场。遵循官方规范，支持数据持久化与一键同步。
 
-<p align="center">
-  <strong>精选、高质量、开箱即用的 1Panel 本地扩展应用市场</strong><br>
-  遵循官方规范 · 支持数据持久化 · 一键同步 · 适配生产环境
-</p>
-
-<p align="center">
-  <a href="https://github.com/mainsir/1panel-apps/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License" /></a>
-  <a href="https://github.com/mainsir/1panel-apps/pulls"><img src="https://img.shields.io/badge/PRs-Welcome-brightgreen.svg" alt="PRs Welcome" /></a>
-  <img src="https://img.shields.io/badge/1Panel-Local%20Apps-orange.svg" alt="1Panel Compatible" />
-  <img src="https://img.shields.io/badge/Apps-4%2B-blueviolet.svg" alt="Apps Count" />
-</p>
+[English](./README_en.md) · [应用制作规范](./1Panel本地应用制作规范.md)
 
 ---
 
