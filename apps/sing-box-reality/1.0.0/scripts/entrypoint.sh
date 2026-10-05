@@ -127,27 +127,20 @@ SAFE_NAME="$(printf '%s' "$LINK_NAME" | sed 's/ /%20/g')"
 SHARE_LINK="vless://${SB_UUID}@${PUBLIC_HOST}:${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${SNI}&fp=${FP}&pbk=${PUBLIC_KEY}&sid=${SHORT_ID}&type=tcp#${SAFE_NAME}"
 
 cat > "$CLIENT_FILE" <<EOF
-==================================================
-              sing-box VLESS Reality
-==================================================
-【一键导入链接 (复制直接导入客户端)】
+========== VLESS Reality ==========
+地址:   ${PUBLIC_HOST}
+端口:   ${PORT}
+UUID:   ${SB_UUID}
+Flow:   xtls-rprx-vision
+SNI:    ${SNI}
+握手:   ${DEST}:${DEST_PORT}
+公钥:   ${PUBLIC_KEY}
+sid:    ${SHORT_ID}
+指纹:   ${FP}
+
+分享链接:
 ${SHARE_LINK}
-
-【节点详细参数 (用于手动配置)】
-地址 (Address):     ${PUBLIC_HOST}
-端口 (Port):        ${PORT}
-用户ID (UUID):      ${SB_UUID}
-流控 (Flow):        xtls-rprx-vision
-伪装域名 (SNI):     ${SNI}
-握手目标 (Dest):    ${DEST}:${DEST_PORT}
-公钥 (Public Key):  ${PUBLIC_KEY}
-Short ID:           ${SHORT_ID}
-指纹 (Fingerprint): ${FP}
-
-【使用提示】
-1. 支持 Clash Verge Rev / Sing-Box / v2rayN / Nekoray / Shadowrocket 等客户端。
-2. 若外网无法连接，请确认云服务器安全组/防火墙已放行 TCP 端口: ${PORT}。
-==================================================
+===================================
 EOF
 
 chmod 600 "$CLIENT_FILE" 2>/dev/null || true
