@@ -7,7 +7,7 @@ It is packaged for one-click installation via 1Panel local apps.
 
 - Protocol: VLESS over TCP, Reality TLS, Vision flow
 - Auto-generates UUID, Reality keypair, and shortId on first start
-- Exports client connection info and share link (`client.txt`)
+- Exports client connection info and node link (`client.txt`)
 - Host networking; architecture: amd64
 
 ## Defaults
@@ -22,14 +22,14 @@ It is packaged for one-click installation via 1Panel local apps.
 ## Usage
 
 1. Set the public IP or domain as the client connection address during install.
-2. Import the share link or parameters from `client.txt` into your client.
+2. Import the node link or parameters from `client.txt` into your client.
 3. After changing port, SNI, or handshake settings, re-export and re-import the link.
 
 ## Data
 
 - `./data/keys.env` — secrets (persisted automatically)
 - `./data/config.json` — runtime config
-- `./data/client.txt` — one-click share link and client parameters
+- `./data/client.txt` — node link and client parameters
 
 ## Image
 
