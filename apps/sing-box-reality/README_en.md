@@ -13,19 +13,18 @@ It is packaged for one-click installation via 1Panel local apps.
 
 ## Defaults
 
-| Item | Value |
-|---|---|
-| Listen port | 38443 |
-| SNI | www.nvidia.com |
-| Handshake target | www.nvidia.com:443 |
-| Fingerprint | chrome |
-| Egress proxy (Socks5) | Empty (direct by default) |
+| Item | Value | Description |
+|---|---|---|
+| Listen port | 38443 | Reality listen port |
+| SNI | www.nvidia.com | Camouflage domain (handshake target automatically synced to 443) |
+| Fingerprint | chrome | Default standard fingerprint |
+| Egress proxy (Socks5) | Empty (direct by default) | Optional upstream proxy |
 
 ## Usage
 
-1. Set the public IP or domain as the client connection address during install (UUID is auto-generated if left empty, or customizable in parameters).
-2. Import the node link or parameters from `client.txt` into your client.
-3. After changing port, SNI, or handshake settings, re-export and re-import the link.
+1. Install directly with default settings, or customize listen port and SNI domain as needed.
+2. View `client.txt` in the data directory and copy the node link to import into your client.
+3. UUID and Reality keypair are generated automatically on first start and persisted in `keys.env`.
 4. To specify an egress proxy (e.g. for streaming unlock or residential IP), configure the optional egress proxy host and port in parameters.
 
 ## Data

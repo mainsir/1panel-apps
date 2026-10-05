@@ -9,7 +9,7 @@ CLIENT_FILE="${DATA_DIR}/client.txt"
 
 PORT="${PANEL_APP_PORT_TCP:-38443}"
 SNI="${REALITY_SNI:-www.nvidia.com}"
-DEST="${REALITY_DEST:-www.nvidia.com}"
+DEST="${REALITY_DEST:-$SNI}"
 DEST_PORT="${REALITY_DEST_PORT:-443}"
 PUBLIC_HOST="${PUBLIC_HOST:-}"
 FP="${FINGERPRINT:-chrome}"

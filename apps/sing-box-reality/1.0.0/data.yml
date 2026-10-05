@@ -17,23 +17,6 @@ additionalProperties:
       required: true
       type: text
 
-    - default: www.nvidia.com
-      edit: true
-      envKey: REALITY_DEST
-      labelZh: Reality 握手网站
-      labelEn: Reality handshake server
-      required: true
-      type: text
-
-    - default: 443
-      edit: true
-      envKey: REALITY_DEST_PORT
-      labelZh: 握手网站端口
-      labelEn: Handshake server port
-      required: true
-      rule: paramPort
-      type: number
-
     - default: ""
       edit: true
       envKey: PUBLIC_HOST
@@ -41,37 +24,6 @@ additionalProperties:
       labelEn: Public host for client links
       required: false
       type: text
-
-    - default: ""
-      edit: true
-      envKey: UUID
-      labelZh: UUID(留空则自动生成)
-      labelEn: UUID (empty = auto)
-      required: false
-      type: text
-
-    - default: chrome
-      edit: true
-      envKey: FINGERPRINT
-      labelZh: 客户端 uTLS 指纹
-      labelEn: Client uTLS fingerprint
-      required: true
-      type: select
-      values:
-        - label: chrome
-          value: chrome
-        - label: firefox
-          value: firefox
-        - label: safari
-          value: safari
-        - label: ios
-          value: ios
-        - label: android
-          value: android
-        - label: edge
-          value: edge
-        - label: random
-          value: random
 
     - default: SingBox-Reality
       edit: true
