@@ -8,6 +8,7 @@ It is packaged for one-click installation via 1Panel local apps.
 - Protocol: VLESS over TCP, Reality TLS, Vision flow
 - Auto-generates UUID, Reality keypair, and shortId on first start
 - Exports client connection info and node link (`client.txt`)
+- Optional egress proxy: forward traffic through a landing Socks5 proxy (direct by default)
 - Host networking; architecture: amd64
 
 ## Defaults
@@ -18,12 +19,14 @@ It is packaged for one-click installation via 1Panel local apps.
 | SNI | www.nvidia.com |
 | Handshake target | www.nvidia.com:443 |
 | Fingerprint | chrome |
+| Egress Socks5 proxy | Empty (direct by default) |
 
 ## Usage
 
 1. Set the public IP or domain as the client connection address during install.
 2. Import the node link or parameters from `client.txt` into your client.
 3. After changing port, SNI, or handshake settings, re-export and re-import the link.
+4. To specify an egress/landing IP, configure the optional Socks5 host and port in parameters.
 
 ## Data
 

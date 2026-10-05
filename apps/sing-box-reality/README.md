@@ -8,6 +8,7 @@
 - 协议：VLESS over TCP，TLS Reality，Vision（`xtls-rprx-vision`）
 - 首次启动自动生成 UUID、Reality 密钥对与 shortId
 - 自动输出客户端连接信息与节点链接（`client.txt`）
+- 支持可选链式代理：可配置落地 Socks5 节点作为出口 IP（留空默认直连本机）
 - 采用 host 网络模式；支持架构：amd64
 
 ## 默认参数
@@ -18,12 +19,14 @@
 | 伪装域名 (SNI) | www.nvidia.com |
 | Reality 握手目标 | www.nvidia.com:443 |
 | 客户端指纹 | chrome |
+| 落地 Socks5 出口 | 留空（默认直连本机） |
 
 ## 使用说明
 
 1. 安装时填写服务器公网 IP 或域名作为客户端连接地址。
 2. 启动后查看数据目录中的 `client.txt`，复制节点链接一键导入客户端。
 3. 修改端口、SNI 或握手目标后，请重新获取并导入连接信息。
+4. 如需指定出口 IP（如解锁流媒体或使用住宅代理），可在参数中填写落地 Socks5 地址与端口。
 
 ## 数据目录
 

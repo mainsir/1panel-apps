@@ -76,10 +76,42 @@ additionalProperties:
     - default: SingBox-Reality
       edit: true
       envKey: LINK_NAME
-      labelZh: 分享链接备注名
-      labelEn: Share link name
+      labelZh: 节点链接备注名
+      labelEn: Node link name
       required: true
       type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_HOST
+      labelZh: 落地 Socks5 地址 (可选)
+      labelEn: Egress Socks5 host (optional)
+      required: false
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_PORT
+      labelZh: 落地 Socks5 端口 (可选)
+      labelEn: Egress Socks5 port (optional)
+      required: false
+      type: number
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_USER
+      labelZh: 落地 Socks5 用户名 (可选)
+      labelEn: Egress Socks5 username (optional)
+      required: false
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_PASS
+      labelZh: 落地 Socks5 密码 (可选)
+      labelEn: Egress Socks5 password (optional)
+      required: false
+      type: password
 
     - default: Asia/Shanghai
       edit: true

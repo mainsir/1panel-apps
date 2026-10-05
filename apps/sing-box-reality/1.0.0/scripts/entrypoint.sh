@@ -15,6 +15,10 @@ PUBLIC_HOST="${PUBLIC_HOST:-}"
 FP="${FINGERPRINT:-chrome}"
 LINK_NAME="${LINK_NAME:-SingBox-Reality}"
 FORM_UUID="${UUID:-}"
+SOCKS5_HOST="${SOCKS5_HOST:-}"
+SOCKS5_PORT="${SOCKS5_PORT:-}"
+SOCKS5_USER="${SOCKS5_USER:-}"
+SOCKS5_PASS="${SOCKS5_PASS:-}"
 
 trim() {
   printf '%s' "$1" | tr -d '\r\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
@@ -39,6 +43,10 @@ PORT="$(trim "$PORT")"
 DEST_PORT="$(trim "$DEST_PORT")"
 FP="$(trim "$FP")"
 LINK_NAME="$(trim "$LINK_NAME")"
+SOCKS5_HOST="$(trim "$SOCKS5_HOST")"
+SOCKS5_PORT="$(trim "$SOCKS5_PORT")"
+SOCKS5_USER="$(trim "$SOCKS5_USER")"
+SOCKS5_PASS="$(trim "$SOCKS5_PASS")"
 
 if [ -z "$SB_UUID" ]; then
   if [ -n "$FORM_UUID" ]; then
@@ -73,6 +81,52 @@ PUBLIC_KEY=${PUBLIC_KEY}
 SHORT_ID=${SHORT_ID}
 EOF
 chmod 600 "$KEYS_FILE" 2>/dev/null || true
+
+if [ -n "$SOCKS5_HOST" ] && [ -n "$SOCKS5_PORT" ]; then
+  if [ -n "$SOCKS5_USER" ] && [ -n "$SOCKS5_PASS" ]; then
+    OUTBOUNDS_BLOCK=$(cat <<EOF
+    {
+      "type": "socks",
+      "tag": "socks-out",
+      "server": "${SOCKS5_HOST}",
+      "server_port": ${SOCKS5_PORT},
+      "version": "5",
+      "username": "${SOCKS5_USER}",
+      "password": "${SOCKS5_PASS}"
+    },
+    {
+      "type": "direct",
+      "tag": "direct"
+    }
+EOF
+)
+  else
+    OUTBOUNDS_BLOCK=$(cat <<EOF
+    {
+      "type": "socks",
+      "tag": "socks-out",
+      "server": "${SOCKS5_HOST}",
+      "server_port": ${SOCKS5_PORT},
+      "version": "5"
+    },
+    {
+      "type": "direct",
+      "tag": "direct"
+    }
+EOF
+)
+  fi
+  OUTBOUND_DESC="socks5://${SOCKS5_HOST}:${SOCKS5_PORT}"
+else
+  OUTBOUNDS_BLOCK=$(cat <<EOF
+    {
+      "type": "direct",
+      "tag": "direct"
+    }
+EOF
+)
+  OUTBOUND_DESC="direct"
+fi
 
 # Minimal config — no domain_strategy (deprecated on new sing-box)
 cat > "$CONFIG_FILE" <<EOF
@@ -111,10 +165,7 @@ cat > "$CONFIG_FILE" <<EOF
     }
   ],
   "outbounds": [
-    {
-      "type": "direct",
-      "tag": "direct"
-    }
+${OUTBOUNDS_BLOCK}
   ]
 }
 EOF
@@ -145,7 +196,7 @@ EOF
 
 chmod 600 "$CLIENT_FILE" 2>/dev/null || true
 
-echo "OK port=${PORT} sni=${SNI} dest=${DEST}"
+echo "OK port=${PORT} sni=${SNI} dest=${DEST} outbound=${OUTBOUND_DESC}"
 echo "client info: ${CLIENT_FILE}"
 
 sing-box check -c "$CONFIG_FILE"

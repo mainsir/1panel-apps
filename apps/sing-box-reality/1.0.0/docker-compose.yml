@@ -18,6 +18,10 @@ services:
       UUID: ${UUID}
       FINGERPRINT: ${FINGERPRINT}
       LINK_NAME: ${LINK_NAME}
+      SOCKS5_HOST: ${SOCKS5_HOST}
+      SOCKS5_PORT: ${SOCKS5_PORT}
+      SOCKS5_USER: ${SOCKS5_USER}
+      SOCKS5_PASS: ${SOCKS5_PASS}
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     labels:
       createdBy: Apps
