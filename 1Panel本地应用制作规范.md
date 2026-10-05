@@ -14,7 +14,7 @@
 
 ```text
 apps/<app-key>/
-├── logo.png                 # 必需，180×180，建议 ≤ 10 KB
+├── logo.png                 # 必需，180×180，建议 ≤ 50 KB（保持清晰不失真）
 ├── README.md                # 必需，中文
 ├── README_en.md             # 推荐，英文
 ├── data.yml                 # 必需，应用声明
@@ -361,7 +361,7 @@ rm -rf /opt/1panel/resource/apps/local/<app-key>
 
 ## 9. 验收清单
 
-- [ ] `logo.png` 180×180，≤ 10 KB
+- [ ] `logo.png` 180×180，建议 ≤ 50 KB（画质自然无色带断层）
 - [ ] 有 `README.md`，推荐有 `README_en.md`
 - [ ] 根 `data.yml` 必填字段齐全，`description` 含 `en`、`zh`
 - [ ] `key` 与目录名一致；版本目录无 `v` 前缀

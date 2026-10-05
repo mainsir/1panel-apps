@@ -51,8 +51,8 @@ jobs:
               logo_path = os.path.join(app_path, "logo.png")
               if os.path.exists(logo_path):
                   size_kb = os.path.getsize(logo_path) / 1024
-                  if size_kb > 15:
-                      errors.append(f"{app}/logo.png: Image size exceeds 15 KB ({size_kb:.1f} KB)")
+                  if size_kb > 100:
+                      errors.append(f"{app}/logo.png: Image size exceeds 100 KB ({size_kb:.1f} KB)")
                   try:
                       with Image.open(logo_path) as im:
                           if im.size != (180, 180):
