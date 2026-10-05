@@ -17,6 +17,8 @@ Gitea is a lightweight, open-source self-hosted Git service. This package provid
 | Web (HTTP) | 3000 | 3000 |
 | SSH (Git) | 222 | 22 |
 
+Changing the SSH port in 1Panel parameters also updates the port shown in Gitea SSH clone URLs. Set the public URL in the Gitea installation wizard, and check ROOT_URL when using a reverse proxy or changing the Web port.
+
 ## Data Directory
 
 `./data` (contains Gitea configuration, repositories, and `gitea.db`)

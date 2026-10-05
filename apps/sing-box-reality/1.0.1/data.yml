@@ -63,7 +63,7 @@ additionalProperties:
       labelZh: 出口代理密码 (可选)
       labelEn: Egress proxy password (optional)
       required: false
-      type: text
+      type: password
 
     - default: Asia/Shanghai
       edit: true

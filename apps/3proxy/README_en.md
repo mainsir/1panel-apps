@@ -25,6 +25,8 @@ After install:
 
 > Do not expose an open (no-auth) proxy to the public internet.
 
+The connection limit applies to each protocol and supports 128, 256, 512, or 1024 connections. The file descriptor limit is 8192 to allow both listeners and additional overhead.
+
 ## Data Directory
 
 This package is env-config based and has no persistent business data volume. For full custom `3proxy.cfg`, use a config-file mount approach instead.

@@ -105,7 +105,10 @@ jobs:
 
       - name: Check Shell Scripts Syntax
         run: |
-          for f in $(find apps -name "*.sh"); do
+          while IFS= read -r -d '' f; do
             echo "Checking syntax: $f"
             bash -n "$f"
-          done
+          done < <(find apps scripts -name "*.sh" -print0)
+
+      - name: Check Configuration Regressions
+        run: python -m unittest discover -s tests -v

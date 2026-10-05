@@ -1,6 +1,6 @@
 services:
   3proxy:
-    image: ghcr.io/tarampampam/3proxy:2
+    image: ghcr.io/tarampampam/3proxy:2.3.0
     container_name: ${CONTAINER_NAME}
     restart: always
     networks:
@@ -19,8 +19,8 @@ services:
       LOG_OUTPUT: /dev/stdout
     ulimits:
       nofile:
-        soft: 2048
-        hard: 2048
+        soft: 8192
+        hard: 8192
     labels:
       createdBy: Apps
 

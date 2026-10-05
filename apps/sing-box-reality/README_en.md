@@ -26,6 +26,10 @@ It is packaged for one-click installation via 1Panel local apps.
 2. View `client.txt` in the data directory and copy the node link to import into your client.
 3. UUID and Reality keypair are generated automatically on first start and persisted in `keys.env`.
 4. To specify an egress proxy (e.g. for streaming unlock or residential IP), configure the optional egress proxy host and port in parameters.
+5. Proxy host and port must be provided together. When authentication is needed, provide both username and password. Ports must be between 1 and 65535; incomplete or invalid parameters prevent startup.
+6. Set the public host for an importable share link. If left blank, replace `<服务器IP>` in the link with your server address. IPv6 addresses are automatically enclosed in brackets.
+
+Back up the app through 1Panel or save the `data` directory before uninstalling. Uninstalling may remove the installation directory and keys; new keys generated after reinstallation invalidate old client links.
 
 ## Data
 

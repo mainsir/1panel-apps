@@ -74,6 +74,8 @@ cp -rf /opt/1panel-apps/apps/* /opt/1panel/resource/apps/local/
 > 如果后续删除了本仓库中的某个应用，可手动在服务器清理已同步的本地目录：  
 > `rm -rf /opt/1panel/resource/apps/local/<app-key>`
 
+同步只更新应用商店中的安装包。已安装的实例需要在面板中另行升级；修改同版本的安装包不会自动更新实例配置。同步遇到 Git 拉取失败时会报错退出，请检查网络、分支和本地修改后重试。
+
 ---
 
 ## 📦 已收录应用列表
@@ -94,7 +96,7 @@ cp -rf /opt/1panel-apps/apps/* /opt/1panel/resource/apps/local/
 👉 **[1Panel 本地应用制作规范 (详细指南)](./1Panel本地应用制作规范.md)**
 
 ### 核心规范要点：
-* **结构完整**：根目录包含 `logo.png`（180×180，≤15 KB）、`README.md`、`data.yml`，版本目录包含 `data.yml`、`docker-compose.yml`。
+* **结构完整**：根目录包含 `logo.png`（180×180，建议 ≤50 KB）、`README.md`、`data.yml`，版本目录包含 `data.yml`、`docker-compose.yml`。
 * **语言精简**：仅需提供中文（`zh`）与英文（`en`），避免繁冗小语种。
 * **数据持久化**：统一使用 `./data` 相对路径挂载，非 root 容器配齐 `init.sh` 权限初始化。
 * **规范命名**：网络统一使用 `1panel-network`（除非 host 网络），标签 `labels.createdBy: "Apps"`。

@@ -17,6 +17,7 @@ services:
       - USER_GID=1000
       - GITEA__database__DB_TYPE=sqlite3
       - GITEA__database__PATH=/data/gitea/gitea.db
+      - GITEA__server__SSH_PORT=${PANEL_APP_PORT_SSH}
     labels:
       createdBy: "Apps"
 

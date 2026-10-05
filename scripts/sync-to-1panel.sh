@@ -15,7 +15,10 @@ mkdir -p "$LOCAL_DIR"
 if [ -d "/opt/1panel-apps/.git" ] && [ "${USE_TMP:-0}" != "1" ]; then
   # 已有长期仓库目录，直接拉取更新并同步
   echo "[*] 检测到本地已有仓库 /opt/1panel-apps，正在拉取最新代码..."
-  git -C /opt/1panel-apps pull --ff-only 2>/dev/null || (cd /opt/1panel-apps && git fetch --depth=1 && git reset --hard origin/main)
+  if ! git -C /opt/1panel-apps pull --ff-only; then
+    echo "[ERROR] 拉取失败，请检查网络、当前分支和本地修改后重试。" >&2
+    exit 1
+  fi
   cp -rf /opt/1panel-apps/apps/* "$LOCAL_DIR"/
 else
   # 临时目录克隆，复制完毕后自动打扫清理

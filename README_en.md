@@ -46,6 +46,8 @@ Keep your local store up to date automatically:
 2. **Refresh Catalog**: Click **"Update App List"** (更新应用列表) in the top right corner.
 3. **Install**: Select the **"Local"** (本地) category, find your desired app, and click **Install**.
 
+Sync updates the installation packages in the local store. Upgrade installed instances separately in 1Panel; changes to a package with the same version do not automatically update an instance. Failed Git pulls stop synchronization; check the network, branch, and local changes before retrying.
+
 ---
 
 ## 📦 Included Applications

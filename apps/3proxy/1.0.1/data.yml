@@ -34,6 +34,7 @@ additionalProperties:
       labelEn: Proxy Password
       required: true
       random: true
+      rule: paramComplexity
       type: password
 
     - default: "1.0.0.1"
@@ -55,7 +56,16 @@ additionalProperties:
     - default: 512
       edit: true
       envKey: MAX_CONNECTIONS
-      labelZh: 最大连接数
+      labelZh: 每种协议的最大连接数
       labelEn: Max Connections
       required: true
-      type: number
+      type: select
+      values:
+        - label: "128"
+          value: 128
+        - label: "256"
+          value: 256
+        - label: "512"
+          value: 512
+        - label: "1024"
+          value: 1024

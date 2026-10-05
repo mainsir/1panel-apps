@@ -96,6 +96,7 @@ additionalProperties:
 | `Database` | 数据库 |
 | `Tool` | 工具 |
 | `CI/CD` | CI/CD |
+| `DevOps` | 开发与运维（官方 Gitea 使用） |
 | `Local` | 本地 |
 
 `type` 取值：
@@ -374,4 +375,4 @@ rm -rf /opt/1panel/resource/apps/local/<app-key>
 - [ ] 持久化用 `./` 相对路径；需要的目录带 `.gitkeep`
 - [ ] 脚本只在需要时提供，`bash -n` 通过，可执行权限 755
 - [ ] 官方校验脚本通过（可忽略：host 模式的网络误报、description 缺少其他语言）
-- [ ] 本地商店刷新后能安装、改参数、卸载重装，数据保留
+- [ ] 本地商店刷新后能安装、改参数；重启后数据保留；卸载前备份，重装后可恢复数据
