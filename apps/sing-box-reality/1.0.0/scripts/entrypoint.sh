@@ -82,7 +82,7 @@ SHORT_ID=${SHORT_ID}
 EOF
 chmod 600 "$KEYS_FILE" 2>/dev/null || true
 
-if [ -n "$SOCKS5_HOST" ] && [ -n "$SOCKS5_PORT" ]; then
+if [ -n "$SOCKS5_HOST" ] && [ -n "$SOCKS5_PORT" ] && [ "$SOCKS5_PORT" != "0" ]; then
   if [ -n "$SOCKS5_USER" ] && [ -n "$SOCKS5_PASS" ]; then
     OUTBOUNDS_BLOCK=$(cat <<EOF
     {

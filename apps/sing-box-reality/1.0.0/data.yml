@@ -95,7 +95,7 @@ additionalProperties:
       labelZh: 落地 Socks5 端口 (可选)
       labelEn: Egress Socks5 port (optional)
       required: false
-      type: number
+      type: text
 
     - default: ""
       edit: true
@@ -111,7 +111,7 @@ additionalProperties:
       labelZh: 落地 Socks5 密码 (可选)
       labelEn: Egress Socks5 password (optional)
       required: false
-      type: password
+      type: text
 
     - default: Asia/Shanghai
       edit: true
