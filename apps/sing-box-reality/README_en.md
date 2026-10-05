@@ -9,7 +9,6 @@ It is packaged for one-click installation via 1Panel local apps.
 - Auto-generates UUID, Reality keypair, and shortId on first start
 - Exports client connection info and node link (`client.txt`)
 - Optional egress proxy: forward traffic through an upstream Socks5 proxy (direct by default)
-- Optional dashboard API (Clash API): monitor active client IPs and traffic in real-time (disabled by default)
 - Host networking; architecture: amd64
 
 ## Defaults
@@ -21,15 +20,13 @@ It is packaged for one-click installation via 1Panel local apps.
 | Handshake target | www.nvidia.com:443 |
 | Fingerprint | chrome |
 | Egress proxy (Socks5) | Empty (direct by default) |
-| Dashboard port | Empty (disabled by default) |
 
 ## Usage
 
-1. Set the public IP or domain as the client connection address during install.
+1. Set the public IP or domain as the client connection address during install (UUID is auto-generated if left empty, or customizable in parameters).
 2. Import the node link or parameters from `client.txt` into your client.
 3. After changing port, SNI, or handshake settings, re-export and re-import the link.
 4. To specify an egress proxy (e.g. for streaming unlock or residential IP), configure the optional egress proxy host and port in parameters.
-5. To monitor connections and client IPs visually, configure the optional dashboard port and connect using any Clash dashboard.
 
 ## Data
 

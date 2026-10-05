@@ -113,22 +113,6 @@ additionalProperties:
       required: false
       type: text
 
-    - default: ""
-      edit: true
-      envKey: CLASH_API_PORT
-      labelZh: 管理看板端口 (可选)
-      labelEn: Dashboard port (optional)
-      required: false
-      type: text
-
-    - default: ""
-      edit: true
-      envKey: CLASH_API_SECRET
-      labelZh: 管理看板密码 (可选)
-      labelEn: Dashboard secret (optional)
-      required: false
-      type: text
-
     - default: Asia/Shanghai
       edit: true
       envKey: TZ

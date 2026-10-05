@@ -19,8 +19,6 @@ SOCKS5_HOST="${SOCKS5_HOST:-}"
 SOCKS5_PORT="${SOCKS5_PORT:-}"
 SOCKS5_USER="${SOCKS5_USER:-}"
 SOCKS5_PASS="${SOCKS5_PASS:-}"
-CLASH_API_PORT="${CLASH_API_PORT:-}"
-CLASH_API_SECRET="${CLASH_API_SECRET:-}"
 
 trim() {
   printf '%s' "$1" | tr -d '\r\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
@@ -49,8 +47,6 @@ SOCKS5_HOST="$(trim "$SOCKS5_HOST")"
 SOCKS5_PORT="$(trim "$SOCKS5_PORT")"
 SOCKS5_USER="$(trim "$SOCKS5_USER")"
 SOCKS5_PASS="$(trim "$SOCKS5_PASS")"
-CLASH_API_PORT="$(trim "$CLASH_API_PORT")"
-CLASH_API_SECRET="$(trim "${CLASH_API_SECRET:-}")"
 
 if [ -z "$SB_UUID" ]; then
   if [ -n "$FORM_UUID" ]; then
@@ -78,21 +74,11 @@ if [ -z "$PRIVATE_KEY" ] || [ -z "$PUBLIC_KEY" ] || [ -z "$SB_UUID" ] || [ -z "$
   exit 1
 fi
 
-if [ -n "$CLASH_API_PORT" ] && [ "$CLASH_API_PORT" != "0" ]; then
-  if [ -z "$CLASH_API_SECRET" ]; then
-    CLASH_API_SECRET="$(sing-box generate rand 8 --hex 2>/dev/null | tr -d '\r\n[:space:]')"
-    if [ -z "$CLASH_API_SECRET" ]; then
-      CLASH_API_SECRET="secret"
-    fi
-  fi
-fi
-
 cat > "$KEYS_FILE" <<EOF
 SB_UUID=${SB_UUID}
 PRIVATE_KEY=${PRIVATE_KEY}
 PUBLIC_KEY=${PUBLIC_KEY}
 SHORT_ID=${SHORT_ID}
-CLASH_API_SECRET=${CLASH_API_SECRET}
 EOF
 chmod 600 "$KEYS_FILE" 2>/dev/null || true
 
@@ -142,23 +128,6 @@ EOF
   OUTBOUND_DESC="direct"
 fi
 
-if [ -n "$CLASH_API_PORT" ] && [ "$CLASH_API_PORT" != "0" ]; then
-  CLASH_API_BLOCK=$(cat <<EOF
-,
-  "experimental": {
-    "clash_api": {
-      "external_controller": "0.0.0.0:${CLASH_API_PORT}",
-      "secret": "${CLASH_API_SECRET}"
-    }
-  }
-EOF
-)
-  CLASH_DESC="port=${CLASH_API_PORT}"
-else
-  CLASH_API_BLOCK=""
-  CLASH_DESC="disabled"
-fi
-
 # Minimal config — no domain_strategy (deprecated on new sing-box)
 cat > "$CONFIG_FILE" <<EOF
 {
@@ -197,7 +166,7 @@ cat > "$CONFIG_FILE" <<EOF
   ],
   "outbounds": [
 ${OUTBOUNDS_BLOCK}
-  ]${CLASH_API_BLOCK}
+  ]
 }
 EOF
 
@@ -227,7 +196,7 @@ EOF
 
 chmod 600 "$CLIENT_FILE" 2>/dev/null || true
 
-echo "OK port=${PORT} sni=${SNI} dest=${DEST} outbound=${OUTBOUND_DESC} clash_api=${CLASH_DESC}"
+echo "OK port=${PORT} sni=${SNI} dest=${DEST} outbound=${OUTBOUND_DESC}"
 echo "client info: ${CLIENT_FILE}"
 
 sing-box check -c "$CONFIG_FILE"
