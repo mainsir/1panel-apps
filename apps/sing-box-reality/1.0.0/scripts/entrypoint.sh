@@ -6,7 +6,6 @@ DATA_DIR="${DATA_DIR:-/data}"
 KEYS_FILE="${DATA_DIR}/keys.env"
 CONFIG_FILE="${DATA_DIR}/config.json"
 CLIENT_FILE="${DATA_DIR}/client.txt"
-SHARE_FILE="${DATA_DIR}/share.link"
 
 PORT="${PANEL_APP_PORT_TCP:-38443}"
 SNI="${REALITY_SNI:-www.nvidia.com}"
@@ -128,27 +127,33 @@ SAFE_NAME="$(printf '%s' "$LINK_NAME" | sed 's/ /%20/g')"
 SHARE_LINK="vless://${SB_UUID}@${PUBLIC_HOST}:${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${SNI}&fp=${FP}&pbk=${PUBLIC_KEY}&sid=${SHORT_ID}&type=tcp#${SAFE_NAME}"
 
 cat > "$CLIENT_FILE" <<EOF
-========== VLESS Reality ==========
-地址:   ${PUBLIC_HOST}
-端口:   ${PORT}
-UUID:   ${SB_UUID}
-Flow:   xtls-rprx-vision
-SNI:    ${SNI}
-握手:   ${DEST}:${DEST_PORT}
-公钥:   ${PUBLIC_KEY}
-sid:    ${SHORT_ID}
-指纹:   ${FP}
-
-分享链接:
+==================================================
+              sing-box VLESS Reality
+==================================================
+【一键导入链接 (复制直接导入客户端)】
 ${SHARE_LINK}
-===================================
+
+【节点详细参数 (用于手动配置)】
+地址 (Address):     ${PUBLIC_HOST}
+端口 (Port):        ${PORT}
+用户ID (UUID):      ${SB_UUID}
+流控 (Flow):        xtls-rprx-vision
+伪装域名 (SNI):     ${SNI}
+握手目标 (Dest):    ${DEST}:${DEST_PORT}
+公钥 (Public Key):  ${PUBLIC_KEY}
+Short ID:           ${SHORT_ID}
+指纹 (Fingerprint): ${FP}
+
+【使用提示】
+1. 支持 Clash Verge Rev / Sing-Box / v2rayN / Nekoray / Shadowrocket 等客户端。
+2. 若外网无法连接，请确认云服务器安全组/防火墙已放行 TCP 端口: ${PORT}。
+==================================================
 EOF
 
-printf '%s\n' "$SHARE_LINK" > "$SHARE_FILE"
-chmod 600 "$CLIENT_FILE" "$SHARE_FILE" 2>/dev/null || true
+chmod 600 "$CLIENT_FILE" 2>/dev/null || true
 
 echo "OK port=${PORT} sni=${SNI} dest=${DEST}"
-echo "share: ${SHARE_FILE}"
+echo "client info: ${CLIENT_FILE}"
 
 sing-box check -c "$CONFIG_FILE"
 exec sing-box run -c "$CONFIG_FILE"
