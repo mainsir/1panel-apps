@@ -84,32 +84,32 @@ additionalProperties:
     - default: ""
       edit: true
       envKey: SOCKS5_HOST
-      labelZh: 落地 Socks5 地址 (可选)
-      labelEn: Egress Socks5 host (optional)
+      labelZh: 出口代理地址 (Socks5 可选)
+      labelEn: Egress proxy host (Socks5 optional)
       required: false
       type: text
 
     - default: ""
       edit: true
       envKey: SOCKS5_PORT
-      labelZh: 落地 Socks5 端口 (可选)
-      labelEn: Egress Socks5 port (optional)
+      labelZh: 出口代理端口 (Socks5 可选)
+      labelEn: Egress proxy port (Socks5 optional)
       required: false
       type: text
 
     - default: ""
       edit: true
       envKey: SOCKS5_USER
-      labelZh: 落地 Socks5 用户名 (可选)
-      labelEn: Egress Socks5 username (optional)
+      labelZh: 出口代理账号 (可选)
+      labelEn: Egress proxy username (optional)
       required: false
       type: text
 
     - default: ""
       edit: true
       envKey: SOCKS5_PASS
-      labelZh: 落地 Socks5 密码 (可选)
-      labelEn: Egress Socks5 password (optional)
+      labelZh: 出口代理密码 (可选)
+      labelEn: Egress proxy password (optional)
       required: false
       type: text
 
