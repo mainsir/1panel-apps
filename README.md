@@ -73,6 +73,8 @@ cp -rf /opt/1panel-apps/apps/* /opt/1panel/resource/apps/local/
 > [!TIP]
 > 如果后续删除了本仓库中的某个应用，可手动在服务器清理已同步的本地目录：  
 > `rm -rf /opt/1panel/resource/apps/local/<app-key>`
+>
+> `3proxy` 已从本仓库移除，由 [sing-box-socks5](./apps/sing-box-socks5) 替代，且不再单独提供 HTTP 代理端口。已同步过旧包时请执行 `rm -rf /opt/1panel/resource/apps/local/3proxy`。已经安装的 3proxy 实例不会被自动卸载。
 
 同步只更新应用商店中的安装包。已安装的实例需要在面板中另行升级；修改同版本的安装包不会自动更新实例配置。同步遇到 Git 拉取失败时会报错退出，请检查网络、分支和本地修改后重试。
 
@@ -82,10 +84,10 @@ cp -rf /opt/1panel-apps/apps/* /opt/1panel/resource/apps/local/
 
 | 图标 | 应用 Key | 应用名称 | 分类 | 架构 | 特性说明 |
 |:---:|:---|:---|:---:|:---:|:---|
-| <img src="./apps/3proxy/logo.png" width="40"/> | [3proxy](./apps/3proxy) | **3proxy** | 工具 | amd64 / arm64 | 极轻量 HTTP / SOCKS5 双协议代理服务器，基于环境变量快速部署 |
 | <img src="./apps/gitea-sqlite/logo.png" width="40"/> | [gitea-sqlite](./apps/gitea-sqlite) | **Gitea SQLite版** | 开发/运维 | amd64 / arm64 | 单容器轻量 Git 托管，内置 SQLite3，免安装 MySQL，1C1G 小内存也能流畅运行 |
 | <img src="./apps/kasmweb-chrome/logo.png" width="40"/> | [kasmweb-chrome](./apps/kasmweb-chrome) | **Kasm Chrome** | 工具 | amd64 | Web 端 60fps 高清流畅 Chrome 浏览器，支持 WebRTC 声音播放、剪贴板及全量书签持久化 |
 | <img src="./apps/sing-box-reality/logo.png" width="40"/> | [sing-box-reality](./apps/sing-box-reality) | **VLESS Reality** | 工具 | amd64 | 基于 sing-box 的轻量 VLESS Reality 快速入站部署，自动生成密钥与分享链接 |
+| <img src="./apps/sing-box-socks5/logo.png" width="40"/> | [sing-box-socks5](./apps/sing-box-socks5) | **sing-box SOCKS5** | 工具 | amd64 / arm64 / arm/v7 | 事件驱动 SOCKS5 代理，替代 3proxy；可选同端口 HTTP，支持 host 网络 |
 
 ---
 
