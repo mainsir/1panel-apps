@@ -134,5 +134,167 @@ class SyncTests(unittest.TestCase):
             self.assertEqual(list((work / 'store').iterdir()), [])
 
 
+class SocksEntrypointTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.work = Path(self.temp.name)
+        self.bin = self.work / 'bin'
+        self.bin.mkdir()
+        mock = self.bin / 'sing-box'
+        mock.write_text(MOCK)
+        mock.chmod(0o755)
+        self.data = self.work / 'data'
+        self.entry = ROOT / 'apps/sing-box-socks5/1.13.21/scripts/entrypoint.sh'
+
+    def start(self, **values):
+        cleared = (
+            'PANEL_APP_PORT_SOCKS', 'PROXY_USERNAME', 'PROXY_PASSWORD',
+            'LOG_LEVEL', 'INBOUND_TYPE', 'TZ', 'NETWORK_MODE', 'PANEL_ENV_FILE')
+        env = {k: v for k, v in os.environ.items() if k not in cleared}
+        env.update(PATH=f'{self.bin}:{env["PATH"]}', DATA_DIR=str(self.data),
+                   PANEL_ENV_FILE=str(self.work / 'missing.env'))
+        env.update(values)
+        return subprocess.run(['sh', str(self.entry)], env=env, capture_output=True, text=True)
+
+    def config(self):
+        return json.loads((self.data / 'config.json').read_text())
+
+    def test_default_socks_config_requires_auth(self):
+        result = self.start(PROXY_USERNAME='user', PROXY_PASSWORD='pass')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        inbound = self.config()['inbounds'][0]
+        self.assertEqual(self.config()['log'], {'level': 'warn', 'timestamp': True})
+        self.assertEqual(inbound['type'], 'socks')
+        self.assertEqual(inbound['tag'], 'socks-in')
+        self.assertEqual(inbound['listen'], '0.0.0.0')
+        self.assertEqual(inbound['listen_port'], 10001)
+        self.assertEqual(inbound['users'], [{'username': 'user', 'password': 'pass'}])
+        self.assertEqual(self.config()['outbounds'], [{'type': 'direct', 'tag': 'direct'}])
+        self.assertNotIn('route', self.config())
+        self.assertEqual((self.data / 'config.json').stat().st_mode & 0o777, 0o600)
+        self.assertTrue((self.data / 'started').exists())
+
+    def test_credentials_preserve_special_characters(self):
+        marker = self.work / 'pwned'
+        passwords = ['ab"cd', r'ab\ncd', ' trailing space ', '中文\t密码\n\n',
+                     f'$(touch {marker})', f'`touch {marker}`', '$PATH']
+        for password in passwords:
+            with self.subTest(password=password):
+                result = self.start(PROXY_USERNAME=' user"\\ ', PROXY_PASSWORD=password)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                user = self.config()['inbounds'][0]['users'][0]
+                self.assertEqual(user['username'], ' user"\\ ')
+                self.assertEqual(user['password'], password)
+                self.assertFalse(marker.exists())
+
+    def test_panel_env_file_preserves_dollar_password(self):
+        env_file = self.work / 'panel.env'
+        env_file.write_text('OTHER=1\nPROXY_USERNAME=file user\nPROXY_PASSWORD=p@ss"w$ord\n')
+        result = self.start(PROXY_USERNAME='env-user', PROXY_PASSWORD='p@ss"w',
+                            PANEL_ENV_FILE=str(env_file))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        user = self.config()['inbounds'][0]['users'][0]
+        self.assertEqual(user['username'], 'file user')
+        self.assertEqual(user['password'], 'p@ss"w$ord')
+        env_file.write_text("PROXY_USERNAME='fileuser'\nPROXY_PASSWORD='keep$me'\n")
+        result = self.start(PANEL_ENV_FILE=str(env_file))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        user = self.config()['inbounds'][0]['users'][0]
+        self.assertEqual(user['username'], 'fileuser')
+        self.assertEqual(user['password'], 'keep$me')
+
+    def test_mixed_inbound_and_log_level(self):
+        result = self.start(PROXY_USERNAME='user', PROXY_PASSWORD='pass',
+                            INBOUND_TYPE='mixed', LOG_LEVEL='debug', PANEL_APP_PORT_SOCKS='01080')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        inbound = self.config()['inbounds'][0]
+        self.assertEqual(inbound['type'], 'mixed')
+        self.assertEqual(inbound['tag'], 'mixed-in')
+        self.assertEqual(inbound['listen_port'], 1080)
+        self.assertEqual(self.config()['log']['level'], 'debug')
+
+    def test_invalid_values_do_not_start(self):
+        cases = [
+            {},
+            dict(PROXY_USERNAME='user'),
+            dict(PROXY_PASSWORD='password'),
+            dict(PROXY_USERNAME='user', PROXY_PASSWORD='password', PANEL_APP_PORT_SOCKS='0'),
+            dict(PROXY_USERNAME='user', PROXY_PASSWORD='password', PANEL_APP_PORT_SOCKS='65536'),
+            dict(PROXY_USERNAME='user', PROXY_PASSWORD='password', PANEL_APP_PORT_SOCKS='abc'),
+            dict(PROXY_USERNAME='user', PROXY_PASSWORD='password', LOG_LEVEL='trace'),
+            dict(PROXY_USERNAME='user', PROXY_PASSWORD='password', INBOUND_TYPE='http'),
+            dict(PROXY_USERNAME='user', PROXY_PASSWORD='password', INBOUND_TYPE='socks;x'),
+        ]
+        for values in cases:
+            with self.subTest(values=values):
+                result = self.start(**values)
+                self.assertNotEqual(result.returncode, 0, result.stderr)
+                self.assertFalse((self.data / 'started').exists())
+
+
+class SocksPackageTests(unittest.TestCase):
+    def setUp(self):
+        self.version = ROOT / 'apps/sing-box-socks5/1.13.21'
+        self.bridge = (self.version / 'docker-compose.yml').read_text()
+        self.host = (self.version / 'scripts/docker-compose.host.yml').read_text()
+
+    def test_network_mode_script_switches_compose(self):
+        import yaml
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp)
+            scripts = work / 'scripts'
+            scripts.mkdir()
+            for name in ('apply-network.sh', 'docker-compose.host.yml'):
+                source = self.version / 'scripts' / name
+                target = scripts / name
+                target.write_bytes(source.read_bytes())
+                target.chmod(source.stat().st_mode & 0o777)
+            (work / 'docker-compose.yml').write_text(self.bridge)
+            (work / '.env').write_text('PROXY_PASSWORD=ab$cd\nNETWORK_MODE="host"\n')
+            result = subprocess.run(['bash', './scripts/apply-network.sh'], cwd=work,
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            host = yaml.safe_load((work / 'docker-compose.yml').read_text())
+            service = host['services']['sing-box-socks5']
+            self.assertEqual(service['network_mode'], 'host')
+            self.assertNotIn('ports', service)
+            self.assertNotIn('networks', service)
+            self.assertNotIn('networks', host)
+
+            (work / 'docker-compose.yml').write_text(self.bridge)
+            (work / '.env').write_text('NETWORK_MODE=bridge\n')
+            result = subprocess.run(['bash', './scripts/apply-network.sh'], cwd=work,
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual((work / 'docker-compose.yml').read_text(), self.bridge)
+
+            (work / '.env').write_text('NETWORK_MODE=overlay\n')
+            result = subprocess.run(['bash', './scripts/apply-network.sh'], cwd=work,
+                                    capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+
+    def test_compose_files_share_image_and_declared_variables(self):
+        import yaml
+        form = yaml.safe_load((self.version / 'data.yml').read_text())
+        env_keys = {field['envKey'] for field in form['additionalProperties']['formFields']}
+        images = set()
+        for text in (self.bridge, self.host):
+            data = yaml.safe_load(text)
+            service = data['services']['sing-box-socks5']
+            images.add(service['image'])
+            self.assertEqual(service['restart'], 'always')
+            self.assertIn('./.env:/run/panel.env:ro', service['volumes'])
+            self.assertEqual(service['ulimits']['nofile'], {'soft': 65535, 'hard': 65535})
+            self.assertEqual(set(service['environment']), env_keys)
+            used = set(__import__('re').findall(r'\$\{([A-Za-z0-9_]+)\}', text))
+            self.assertTrue(used <= env_keys | {'CONTAINER_NAME'})
+        self.assertEqual(images, {'ghcr.io/sagernet/sing-box:v1.13.21'})
+        bridge = yaml.safe_load(self.bridge)
+        self.assertEqual(bridge['networks']['1panel-network']['external'], True)
+        self.assertNotIn('network_mode', bridge['services']['sing-box-socks5'])
+        self.assertFalse((ROOT / 'apps/3proxy').exists())
+
+
 if __name__ == '__main__':
     unittest.main()

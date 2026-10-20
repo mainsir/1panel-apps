@@ -1,0 +1,80 @@
+additionalProperties:
+  formFields:
+    - default: 10001
+      edit: true
+      envKey: PANEL_APP_PORT_SOCKS
+      labelZh: SOCKS5 端口
+      labelEn: SOCKS5 Port
+      required: true
+      rule: paramPort
+      type: number
+
+    - default: proxy
+      edit: true
+      envKey: PROXY_USERNAME
+      labelZh: 代理账号
+      labelEn: Proxy Username
+      required: true
+      rule: paramCommon
+      type: text
+
+    - default: changeme
+      edit: true
+      envKey: PROXY_PASSWORD
+      labelZh: 代理密码
+      labelEn: Proxy Password
+      required: true
+      random: true
+      rule: paramComplexity
+      type: password
+
+    - default: socks
+      edit: true
+      envKey: INBOUND_TYPE
+      labelZh: 入站类型
+      labelEn: Inbound Type
+      required: true
+      type: select
+      values:
+        - label: SOCKS5
+          value: socks
+        - label: SOCKS5 + HTTP
+          value: mixed
+
+    - default: warn
+      edit: true
+      envKey: LOG_LEVEL
+      labelZh: 日志级别
+      labelEn: Log Level
+      required: true
+      type: select
+      values:
+        - label: warn
+          value: warn
+        - label: info
+          value: info
+        - label: error
+          value: error
+        - label: debug
+          value: debug
+
+    - default: Asia/Shanghai
+      edit: true
+      envKey: TZ
+      labelZh: 时区
+      labelEn: Timezone
+      required: true
+      type: text
+
+    - default: bridge
+      edit: false
+      envKey: NETWORK_MODE
+      labelZh: 网络模式
+      labelEn: Network Mode
+      required: true
+      type: select
+      values:
+        - label: bridge
+          value: bridge
+        - label: host
+          value: host
