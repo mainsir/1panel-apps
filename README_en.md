@@ -48,16 +48,18 @@ Keep your local store up to date automatically:
 
 Sync updates the installation packages in the local store. Upgrade installed instances separately in 1Panel; changes to a package with the same version do not automatically update an instance. Failed Git pulls stop synchronization; check the network, branch, and local changes before retrying.
 
+`3proxy` has been removed and replaced by [sing-box-socks5](./apps/sing-box-socks5). The new app does not provide a separate HTTP proxy port. After syncing, remove the old local package with `rm -rf /opt/1panel/resource/apps/local/3proxy`. Installed 3proxy instances are not uninstalled automatically.
+
 ---
 
 ## 📦 Included Applications
 
 | Icon | App Key | App Name | Category | Arch | Highlights |
 |:---:|:---|:---|:---:|:---:|:---|
-| <img src="./apps/3proxy/logo.png" width="40"/> | [3proxy](./apps/3proxy) | **3proxy** | Tool | amd64 / arm64 | Tiny, fast HTTP and SOCKS5 proxy server configured via environment variables |
 | <img src="./apps/gitea-sqlite/logo.png" width="40"/> | [gitea-sqlite](./apps/gitea-sqlite) | **Gitea (SQLite)** | DevOps | amd64 / arm64 | Single-container Gitea with embedded SQLite3; no MySQL needed; runs on 1 vCPU / 1GB RAM |
 | <img src="./apps/kasmweb-chrome/logo.png" width="40"/> | [kasmweb-chrome](./apps/kasmweb-chrome) | **Kasm Chrome** | Tool | amd64 | Web-accessible 60fps Chrome browser powered by KasmVNC WebRTC; audio, clipboard, and profile persistence |
 | <img src="./apps/sing-box-reality/logo.png" width="40"/> | [sing-box-reality](./apps/sing-box-reality) | **VLESS Reality** | Tool | amd64 | Lightweight VLESS Reality inbound service via sing-box; auto secret generation |
+| <img src="./apps/sing-box-socks5/logo.png" width="40"/> | [sing-box-socks5](./apps/sing-box-socks5) | **sing-box SOCKS5** | Tool | amd64 / arm64 / arm/v7 | Event-driven SOCKS5 proxy replacing 3proxy; optional HTTP on the same port; host network for LXC |
 
 ---
 
