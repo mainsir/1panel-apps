@@ -58,7 +58,7 @@ Sync updates the installation packages in the local store. Upgrade installed ins
 |:---:|:---|:---|:---:|:---:|:---|
 | <img src="./apps/gitea-sqlite/logo.png" width="40"/> | [gitea-sqlite](./apps/gitea-sqlite) | **Gitea (SQLite)** | DevOps | amd64 / arm64 | Single-container Gitea with embedded SQLite3; no MySQL needed; runs on 1 vCPU / 1GB RAM |
 | <img src="./apps/kasmweb-chrome/logo.png" width="40"/> | [kasmweb-chrome](./apps/kasmweb-chrome) | **Kasm Chrome** | Tool | amd64 | Web-accessible 60fps Chrome browser powered by KasmVNC WebRTC; audio, clipboard, and profile persistence |
-| <img src="./apps/sing-box-reality/logo.png" width="40"/> | [sing-box-reality](./apps/sing-box-reality) | **VLESS Reality** | Tool | amd64 | Lightweight VLESS Reality inbound service via sing-box; auto secret generation |
+| <img src="./apps/sing-box-reality/logo.png" width="40"/> | [sing-box-reality](./apps/sing-box-reality) | **VLESS WS TLS** | Tool | amd64 | VLESS WebSocket inbound via sing-box; TLS terminates at the reverse proxy; share link on first start |
 | <img src="./apps/sing-box-socks5/logo.png" width="40"/> | [sing-box-socks5](./apps/sing-box-socks5) | **sing-box SOCKS5** | Tool | amd64 / arm64 / arm/v7 | Event-driven SOCKS5 proxy replacing 3proxy; optional HTTP on the same port; host network for LXC |
 
 ---
