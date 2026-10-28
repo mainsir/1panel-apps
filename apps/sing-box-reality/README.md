@@ -10,7 +10,10 @@
 - 传输路径可配，早期数据 2048 字节，头为 `Sec-WebSocket-Protocol`
 - sing-box 不配置 TLS / Reality；证书由前置反代提供
 - 首次启动生成 UUID 并写入 `keys.env`，之后重启和改参数都沿用该 UUID
-- 每次启动按表单生成 `config.json`，并在 `client.txt` 写入可导入的节点链接
+- 可选多用户：表单 `USERS` 每行 `name|uuid留空自动|max_ips`（也可用 `;` 分隔）；留空则保持单用户
+- 同一容器、同一 WebSocket 路径与伪装站点；每位用户独立 UUID 与 `client.txt` 节点链接
+- `max_ips` 为尽力而为的并发源 IP 上限（Clash API）；`0` 或不填表示不限制；无流量配额/限速
+- 每次启动按表单生成 `config.json` / `users.json`，并在 `client.txt` 写入可导入的节点链接
 - 可选出口：填写 Socks5 后入站流量从该代理出去；留空则直连
 - host 网络，便于同机 OpenResty 访问 `127.0.0.1`；架构：amd64
 
@@ -25,7 +28,8 @@
 | 节点备注 | SingBox-WS | |
 | 指纹 | chrome | 写在分享链接里 |
 | 时区 | Asia/Shanghai | |
-| 出口代理 (Socks5) | 留空（直连） | 可选 |
+| 出口代理 (Socks5) | 留空（直连） | 可选（高级） |
+| 多用户 USERS | 留空（单用户） | 每行 name\|uuid留空\|max_ips；`;` 也可 |
 
 ## 使用说明
 
@@ -55,6 +59,22 @@ location = /cdn-cgi/assets/v7kQm2pLx9nR {
 }
 ```
 
+### 多用户
+
+表单「多用户」留空时行为与 1.0.2 相同：一个 UUID，写在 `keys.env`。
+
+需要多人共用同一域名、路径和伪装时，按行填写（1Panel 单行框也可用 `;`）：
+
+```
+alice||2
+bob|22222222-2222-4222-8222-222222222222|1
+carol||0
+```
+
+字段：`name|uuid-or-empty|max_ips`。`uuid` 留空则自动生成，并按名字持久化到 `users.json`；`max_ips=0` 表示不限制。每位用户在 `client.txt` 各有一条 `vless://` 链接。
+
+`max_ips>0` 时会启用本机 Clash API，并由 `ip-limit.sh` 尽力关闭超出上限的连接。这不是内核级限速，也没有流量配额。
+
 ### 出口代理
 
 需要更换出口 IP 时，同时填写 Socks5 地址和端口。需要认证时，账号和密码一起填。端口范围是 1–65535。只填一半时容器会拒绝启动。
@@ -63,7 +83,8 @@ location = /cdn-cgi/assets/v7kQm2pLx9nR {
 
 | 路径 | 说明 |
 |---|---|
-| `./data/keys.env` | UUID（自动保存） |
+| `./data/keys.env` | 主 UUID（自动保存，兼容单用户） |
+| `./data/users.json` | 多用户名单、UUID、max_ips |
 | `./data/config.json` | sing-box 运行配置 |
 | `./data/client.txt` | 节点链接和客户端参数 |
 

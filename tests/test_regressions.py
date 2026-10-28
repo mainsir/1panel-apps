@@ -563,7 +563,140 @@ class WsPackageTests(unittest.TestCase):
             self.assertIn('WebSocket', text)
         self.assertIn('VLESS WS TLS', (ROOT / 'README.md').read_text())
         self.assertTrue((self.app / '1.0.1' / 'docker-compose.yml').is_file())
+        self.assertTrue((self.app / '1.0.3' / 'docker-compose.yml').is_file())
 
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class WsMultiUserEntrypointTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.work = Path(self.temp.name)
+        self.bin = self.work / 'bin'
+        self.bin.mkdir()
+        mock = self.bin / 'sing-box'
+        mock.write_text(
+            "#!/bin/sh\n"
+            "case \"$1 $2\" in\n"
+            "  'generate uuid')\n"
+            "    n=$(cat \"$DATA_DIR/.uuidn\" 2>/dev/null || echo 0); n=$((n+1)); "
+            "echo \"$n\" > \"$DATA_DIR/.uuidn\"\n"
+            "    printf '11111111-1111-4111-8111-%012d\\n' \"$n\" ;;\n"
+            "  'check -c') python3 -c 'import json,sys; json.load(open(sys.argv[1]))' \"$3\" ;;\n"
+            "  'run -c') touch \"$DATA_DIR/started\" ;;\n"
+            "  *) exit 1 ;;\n"
+            "esac\n"
+        )
+        mock.chmod(0o755)
+        self.data = self.work / 'data'
+        self.entry = ROOT / 'apps/sing-box-reality/1.0.3/scripts/entrypoint.sh'
+
+    def start(self, **values):
+        cleared = (
+            'PANEL_APP_PORT_TCP', 'LISTEN_HOST', 'PUBLIC_HOST', 'WS_PATH', 'LINK_NAME',
+            'USERS', 'SOCKS5_HOST', 'SOCKS5_PORT', 'SOCKS5_USER', 'SOCKS5_PASS', 'TZ',
+            'PANEL_ENV_FILE', 'FINGERPRINT', 'UUID', 'REALITY_SNI')
+        env = {k: v for k, v in os.environ.items() if k not in cleared}
+        env.update(PATH=f'{self.bin}:{env["PATH"]}', DATA_DIR=str(self.data),
+                   PANEL_ENV_FILE=str(self.work / 'missing.env'))
+        env.update(values)
+        return subprocess.run(['sh', str(self.entry)], env=env, capture_output=True, text=True)
+
+    def config(self):
+        return json.loads((self.data / 'config.json').read_text())
+
+    def users(self):
+        return json.loads((self.data / 'users.json').read_text())
+
+    def links(self):
+        return [line for line in (self.data / 'client.txt').read_text().splitlines()
+                if line.startswith('vless://')]
+
+    def test_single_user_compatible_when_users_empty(self):
+        from urllib.parse import quote
+        result = self.start(PUBLIC_HOST='cdn.example.com')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        inbound = self.config()['inbounds'][0]
+        self.assertEqual(inbound['users'], [{
+            'name': 'default',
+            'uuid': '11111111-1111-4111-8111-000000000001',
+        }])
+        self.assertNotIn('experimental', self.config())
+        self.assertEqual(len(self.links()), 1)
+        self.assertTrue(self.links()[0].endswith('#SingBox-WS'))
+        self.assertEqual(self.users()[0]['max_ips'], 0)
+        path = '/cdn-cgi/assets/v7kQm2pLx9nR'
+        self.assertIn(f'path={quote(path, safe="")}', self.links()[0])
+
+    def test_multi_user_semicolon_and_persist_uuid_by_name(self):
+        result = self.start(
+            PUBLIC_HOST='cdn.example.com',
+            USERS='alice||2;bob|22222222-2222-4222-8222-222222222222|0')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        inbound = self.config()['inbounds'][0]
+        self.assertEqual(inbound['users'], [
+            {'name': 'alice', 'uuid': '11111111-1111-4111-8111-000000000001'},
+            {'name': 'bob', 'uuid': '22222222-2222-4222-8222-222222222222'},
+        ])
+        self.assertEqual(self.config()['experimental'], {
+            'clash_api': {'external_controller': '127.0.0.1:19090'},
+        })
+        persisted = self.users()
+        self.assertEqual(persisted[0], {
+            'name': 'alice', 'uuid': '11111111-1111-4111-8111-000000000001', 'max_ips': 2})
+        self.assertEqual(persisted[1]['max_ips'], 0)
+        self.assertEqual(len(self.links()), 2)
+        self.assertTrue(any('SingBox-WS-alice' in link for link in self.links()))
+        alice_uuid = persisted[0]['uuid']
+        (self.data / 'started').unlink(missing_ok=True)
+        result = self.start(PUBLIC_HOST='cdn.example.com', USERS='alice||2')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.users()[0]['uuid'], alice_uuid)
+        self.assertEqual(len(self.config()['inbounds'][0]['users']), 1)
+
+    def test_duplicate_name_and_bad_uuid_fail(self):
+        result = self.start(PUBLIC_HOST='cdn.example.com', USERS='alice||1\nalice||2')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('duplicate', result.stderr)
+        result = self.start(PUBLIC_HOST='cdn.example.com', USERS='bob|not-a-uuid|1')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('UUID', result.stderr)
+        self.assertFalse((self.data / 'started').exists())
+
+
+class WsMultiUserPackageTests(unittest.TestCase):
+    def setUp(self):
+        self.app = ROOT / 'apps/sing-box-reality'
+        self.version = self.app / '1.0.3'
+
+    def test_compose_and_form_include_users_and_ip_limit(self):
+        import yaml
+        form = yaml.safe_load((self.version / 'data.yml').read_text())
+        fields = {field['envKey']: field for field in form['additionalProperties']['formFields']}
+        compose_text = (self.version / 'docker-compose.yml').read_text()
+        compose = yaml.safe_load(compose_text)
+        service = compose['services']['sing-box-reality']
+        self.assertEqual(service['image'], 'ghcr.io/sagernet/sing-box:v1.13.14')
+        self.assertEqual(service['network_mode'], 'host')
+        self.assertIn('./scripts/ip-limit.sh:/ip-limit.sh:ro', service['volumes'])
+        self.assertIn('USERS', fields)
+        self.assertFalse(fields['USERS']['required'])
+        self.assertIn('name|uuid', fields['USERS']['labelEn'])
+        self.assertIn('max_ips', fields['USERS']['labelZh'])
+        self.assertTrue(fields['SOCKS5_HOST']['labelEn'].startswith('[Advanced'))
+        self.assertEqual(set(service['environment']), set(fields))
+        used = set(__import__('re').findall(r'\$\{([A-Za-z0-9_]+)\}', compose_text))
+        self.assertTrue(used <= set(fields) | {'CONTAINER_NAME'})
+        entry = (self.version / 'scripts/entrypoint.sh').read_text()
+        self.assertIn('name|uuid-or-empty|max_ips', entry)
+        self.assertNotIn('quota_gb', entry)
+        self.assertNotIn('speed_mbps', entry)
+        self.assertTrue(os.access(self.version / 'scripts/entrypoint.sh', os.X_OK))
+        self.assertTrue(os.access(self.version / 'scripts/ip-limit.sh', os.X_OK))
+        for name in ('README.md', 'README_en.md'):
+            text = (self.app / name).read_text()
+            self.assertIn('max_ips', text)
+            self.assertIn('users.json', text)
