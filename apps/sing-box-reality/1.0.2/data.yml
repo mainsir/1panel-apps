@@ -1,0 +1,82 @@
+additionalProperties:
+  formFields:
+    - default: 18443
+      edit: true
+      envKey: PANEL_APP_PORT_TCP
+      labelZh: 本机监听端口
+      labelEn: Local listen port
+      required: true
+      rule: paramPort
+      type: number
+
+    - default: 127.0.0.1
+      edit: true
+      envKey: LISTEN_HOST
+      labelZh: 监听地址
+      labelEn: Listen address
+      required: true
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: PUBLIC_HOST
+      labelZh: 客户端域名
+      labelEn: Client domain
+      required: true
+      type: text
+
+    - default: /cdn-cgi/assets/v7kQm2pLx9nR
+      edit: true
+      envKey: WS_PATH
+      labelZh: WebSocket 路径
+      labelEn: WebSocket path
+      required: true
+      type: text
+
+    - default: SingBox-WS
+      edit: true
+      envKey: LINK_NAME
+      labelZh: 节点链接备注名
+      labelEn: Node link name
+      required: true
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_HOST
+      labelZh: 出口代理地址 (Socks5 可选)
+      labelEn: Egress proxy host (Socks5 optional)
+      required: false
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_PORT
+      labelZh: 出口代理端口 (Socks5 可选)
+      labelEn: Egress proxy port (Socks5 optional)
+      required: false
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_USER
+      labelZh: 出口代理账号 (可选)
+      labelEn: Egress proxy username (optional)
+      required: false
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_PASS
+      labelZh: 出口代理密码 (可选)
+      labelEn: Egress proxy password (optional)
+      required: false
+      type: password
+
+    - default: Asia/Shanghai
+      edit: true
+      envKey: TZ
+      labelZh: 时区
+      labelEn: Timezone
+      required: true
+      type: text

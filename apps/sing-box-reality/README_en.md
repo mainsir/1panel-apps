@@ -1,41 +1,71 @@
 ## Introduction
 
-This application deploys a **VLESS** inbound with **Reality** TLS based on [sing-box](https://sing-box.sagernet.org/).  
-It is packaged for one-click installation via 1Panel local apps.
+This application deploys a **VLESS + WebSocket** inbound based on [sing-box](https://sing-box.sagernet.org/). TLS terminates at a front OpenResty or nginx reverse proxy. sing-box listens on localhost only, and its configuration has no Reality block.
+
+Use it when the host already has a website certificate (Let's Encrypt). Proxy one hidden WebSocket path to the local port. Clients connect to the domain on port 443 and do not connect to sing-box directly.
 
 ## Features
 
-- Protocol: VLESS over TCP, Reality TLS, Vision flow
-- Auto-generates UUID, Reality keypair, and shortId on first start
-- Exports client connection info and node link (`client.txt`)
-- Optional egress proxy: forward traffic through an upstream Socks5 proxy (direct by default)
-- Host networking; architecture: amd64
+- Protocol: VLESS over WebSocket, UUID only, no Vision flow
+- Configurable WebSocket path, 2048-byte early data, header `Sec-WebSocket-Protocol`
+- No TLS or Reality inside sing-box; the reverse proxy presents the certificate
+- Generates a UUID on first start and stores it in `keys.env`; later restarts reuse it
+- Rewrites `config.json` from the form on every start and writes an importable link to `client.txt`
+- Optional egress: when Socks5 is set, inbound traffic leaves through that proxy; otherwise direct
+- Host networking so OpenResty on the same machine can reach `127.0.0.1`; architecture: amd64
 
 ## Defaults
 
 | Item | Value | Description |
 |---|---|---|
-| Listen port | 38443 | Reality listen port |
-| SNI | www.nvidia.com | Camouflage domain (handshake target automatically synced to 443) |
-| Fingerprint | chrome | Default standard fingerprint |
-| Egress proxy (Socks5) | Empty (direct by default) | Optional upstream proxy |
+| Local listen port | 18443 | For the reverse proxy only; clients do not use this port |
+| Listen address | 127.0.0.1 | Loopback by default |
+| WebSocket path | `/cdn-cgi/assets/v7kQm2pLx9nR` | Change this to your own hidden path |
+| Client domain | Set at install | Used for the share link, SNI, and Host |
+| Link name | SingBox-WS | |
+| Fingerprint | chrome | Written into the share link |
+| Timezone | Asia/Shanghai | |
+| Egress proxy (Socks5) | Empty (direct) | Optional |
 
 ## Usage
 
-1. Install directly with default settings, or customize listen port and SNI domain as needed.
-2. View `client.txt` in the data directory and copy the node link to import into your client.
-3. UUID and Reality keypair are generated automatically on first start and persisted in `keys.env`.
-4. To specify an egress proxy (e.g. for streaming unlock or residential IP), configure the optional egress proxy host and port in parameters.
-5. Proxy host and port must be provided together. When authentication is needed, provide both username and password. Ports must be between 1 and 65535; incomplete or invalid parameters prevent startup.
-6. Set the public host for an importable share link. If left blank, replace `<服务器IP>` in the link with your server address. IPv6 addresses are automatically enclosed in brackets.
+1. Enter a domain that already points at this machine and already has a certificate on OpenResty or nginx.
+2. Add the WebSocket location below to that site. The location must match the WebSocket path, and the `proxy_pass` port must match the local listen port.
+3. After startup, open `client.txt` in the data directory and import the node link. The client address is **domain:443**.
+4. Upgrading from 1.0.1 (Reality) keeps the UUID in `keys.env` and stops using Reality keys. After the reverse proxy is in place, import the new `client.txt`. Old Reality links no longer work.
 
-Back up the app through 1Panel or save the `data` directory before uninstalling. Uninstalling may remove the installation directory and keys; new keys generated after reinstallation invalidate old client links.
+Back up the app in 1Panel, or save the `data` directory, before uninstalling. Uninstalling may remove the instance directory. A new install generates a new UUID and invalidates old links.
+
+### OpenResty / nginx
+
+TLS terminates on the site's port 443 with the existing Let's Encrypt certificate. The example uses the default path and port. If you change the form, use those values instead.
+
+OpenResty must be able to reach `127.0.0.1` on the host (this is true when 1Panel OpenResty uses host networking). Do not expose the local listen port to the public internet.
+
+```nginx
+location = /cdn-cgi/assets/v7kQm2pLx9nR {
+    proxy_pass http://127.0.0.1:18443;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_read_timeout 300s;
+}
+```
+
+### Egress proxy
+
+To change the egress address, set the Socks5 host and port together. When the proxy requires authentication, set both username and password. Ports must be from 1 to 65535. A partial setting makes the container refuse to start.
 
 ## Data
 
-- `./data/keys.env` — secrets (persisted automatically)
-- `./data/config.json` — runtime config
-- `./data/client.txt` — node link and client parameters
+| Path | Description |
+|---|---|
+| `./data/keys.env` | UUID (persisted automatically) |
+| `./data/config.json` | sing-box runtime config |
+| `./data/client.txt` | Node link and client parameters |
 
 ## Image
 
