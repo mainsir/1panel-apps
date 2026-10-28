@@ -1,0 +1,106 @@
+additionalProperties:
+  formFields:
+    - default: 443
+      edit: true
+      envKey: PANEL_APP_PORT_UDP
+      labelZh: UDP 监听端口（建议 443）
+      labelEn: UDP listen port (prefer 443)
+      required: true
+      rule: paramPort
+      type: number
+
+    - default: ""
+      edit: true
+      envKey: PUBLIC_HOST
+      labelZh: 域名（SNI / 分享链接）
+      labelEn: Domain (SNI / share link)
+      required: true
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: PASSWORD
+      labelZh: 认证密码（留空自动生成）
+      labelEn: Auth password (empty = auto)
+      required: false
+      type: password
+
+    - default: /opt/1panel/www/sites/your.domain/ssl
+      edit: true
+      envKey: CERT_DIR
+      labelZh: 证书目录（宿主机，含 fullchain/privkey）
+      labelEn: Host cert directory (fullchain + privkey)
+      required: true
+      type: text
+
+    - default: fullchain.pem
+      edit: true
+      envKey: CERT_FILE
+      labelZh: 证书文件名
+      labelEn: Certificate filename
+      required: true
+      type: text
+
+    - default: privkey.pem
+      edit: true
+      envKey: KEY_FILE
+      labelZh: 私钥文件名
+      labelEn: Private key filename
+      required: true
+      type: text
+
+    - default: proxy
+      edit: true
+      envKey: MASQUERADE_TYPE
+      labelZh: 伪装类型（proxy / file）
+      labelEn: Masquerade type (proxy / file)
+      required: true
+      type: text
+
+    - default: https://www.microsoft.com
+      edit: true
+      envKey: MASQUERADE_URL
+      labelZh: 伪装反代目标（proxy 模式）
+      labelEn: Masquerade proxy URL
+      required: true
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: BANDWIDTH_UP
+      labelZh: 上行带宽限制（可选，如 1 gbps）
+      labelEn: Upload bandwidth limit (optional)
+      required: false
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: BANDWIDTH_DOWN
+      labelZh: 下行带宽限制（可选，如 1 gbps）
+      labelEn: Download bandwidth limit (optional)
+      required: false
+      type: text
+
+    - default: "true"
+      edit: true
+      envKey: IGNORE_CLIENT_BANDWIDTH
+      labelZh: 忽略客户端带宽（true/false）
+      labelEn: Ignore client bandwidth (true/false)
+      required: true
+      type: text
+
+    - default: Hysteria2
+      edit: true
+      envKey: LINK_NAME
+      labelZh: 节点链接备注名
+      labelEn: Node link name
+      required: true
+      type: text
+
+    - default: Asia/Shanghai
+      edit: true
+      envKey: TZ
+      labelZh: 时区
+      labelEn: Timezone
+      required: true
+      type: text
