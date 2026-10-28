@@ -174,9 +174,10 @@ additionalProperties:
 端口约定：
 
 1. 有 Web 访问端口时优先用 `PANEL_APP_PORT_HTTP`。
-2. `envKey` 以 `PANEL_APP_PORT` 开头的字段会被当作端口，安装前做占用检查。填的是宿主机端口。
-3. 其他端口用 `PANEL_APP_PORT_<后缀>`，如 `PANEL_APP_PORT_HTTPS`、`PANEL_APP_PORT_SOCKS`。
-4. 端口字段统一 `type: number` + `rule: paramPort`。
+2. 参数名**包含** `PANEL_APP_PORT` 的字段会被当作端口，安装前做占用检查。填的是宿主机端口。检查是子串匹配，不是只看前缀。先对照已安装应用登记的 HTTP/HTTPS 端口，再用 TCP `Listen` 探测；UDP 是否空闲不在这次检查里。
+3. 其他需要占用检查的端口用 `PANEL_APP_PORT_<后缀>`，如 `PANEL_APP_PORT_HTTPS`、`PANEL_APP_PORT_SOCKS`。
+4. 端口字段统一 `type: number` + `rule: paramPort`。`paramPort` 只校验 1–65535，不触发占用检查。
+5. 只监听 UDP、并且必须和已被 TCP 占用的端口同号时（例如 Hysteria2 的 UDP 443 与 OpenResty 的 TCP 443），`envKey` 不能包含 `PANEL_APP_PORT`。仍用 `type: number` + `rule: paramPort`，例如 `HY2_UDP_PORT`。
 
 变量对应：compose 里每个 `${VAR}` 都必须在本文件声明。例外是 1Panel 自动提供的变量，如 `${CONTAINER_NAME}`，以及 `service` 类型联动的 `PANEL_DB_*`、`PANEL_REDIS_*`。
 
@@ -233,7 +234,7 @@ services:
 | `restart: always` | 官方统一写法 |
 | `networks: [1panel-network]` + `external: true` | 所有服务都加入（host 模式除外） |
 | `labels.createdBy: "Apps"` | 所有服务都要有 |
-| 端口用 `${PANEL_APP_PORT_*}` | 不要写死宿主机端口 |
+| 端口用 `${PANEL_APP_PORT_*}` | 不要写死宿主机端口。仅 UDP 且要与已占用的 TCP 端口同号时，改用第 3 节的例外变量 |
 | 持久化用相对路径 | `./data:/xxx`，不要写 `/opt/...` 绝对路径 |
 | 镜像固定版本 | 不用 `:latest`，除非上游只发布 `latest` |
 | 不写 `version:` | Compose v2 已废弃该字段 |
@@ -367,7 +368,7 @@ rm -rf /opt/1panel/resource/apps/local/<app-key>
 - [ ] 根 `data.yml` 必填字段齐全，`description` 含 `en`、`zh`
 - [ ] `key` 与目录名一致；版本目录无 `v` 前缀
 - [ ] 版本 `data.yml` 有 `formFields`；compose 中所有自定义变量都已声明
-- [ ] 端口用 `PANEL_APP_PORT_*` + `type: number` + `rule: paramPort`
+- [ ] 需要占用检查的端口用 `PANEL_APP_PORT_*` + `type: number` + `rule: paramPort`；只监听 UDP 且要与已占用的 TCP 端口同号时，参数名不要包含 `PANEL_APP_PORT`
 - [ ] 密码、Token 用 `type: password`
 - [ ] compose：`${CONTAINER_NAME}`、`restart: always`、`1panel-network`（external）、`createdBy: "Apps"`
 - [ ] host 网络有明确理由并写进 README
