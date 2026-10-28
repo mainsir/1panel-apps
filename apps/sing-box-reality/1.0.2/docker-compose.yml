@@ -1,0 +1,25 @@
+services:
+  sing-box-reality:
+    image: ghcr.io/sagernet/sing-box:v1.13.14
+    container_name: ${CONTAINER_NAME}
+    restart: always
+    network_mode: host
+    working_dir: /data
+    volumes:
+      - ./data:/data
+      - ./scripts/entrypoint.sh:/entrypoint.sh:ro
+      - ./.env:/run/panel.env:ro
+    environment:
+      TZ: ${TZ}
+      PANEL_APP_PORT_TCP: ${PANEL_APP_PORT_TCP}
+      LISTEN_HOST: ${LISTEN_HOST}
+      PUBLIC_HOST: ${PUBLIC_HOST}
+      WS_PATH: ${WS_PATH}
+      LINK_NAME: ${LINK_NAME}
+      SOCKS5_HOST: ${SOCKS5_HOST}
+      SOCKS5_PORT: ${SOCKS5_PORT}
+      SOCKS5_USER: ${SOCKS5_USER}
+      SOCKS5_PASS: ${SOCKS5_PASS}
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    labels:
+      createdBy: "Apps"
