@@ -85,7 +85,7 @@ cp -rf /opt/1panel-apps/apps/* /opt/1panel/resource/apps/local/
 | 图标 | 应用 Key | 应用名称 | 分类 | 架构 | 特性说明 |
 |:---:|:---|:---|:---:|:---:|:---|
 | <img src="./apps/gitea-sqlite/logo.png" width="40"/> | [gitea-sqlite](./apps/gitea-sqlite) | **Gitea SQLite版** | 开发/运维 | amd64 / arm64 | 单容器轻量 Git 托管，内置 SQLite3，免安装 MySQL，1C1G 小内存也能流畅运行 |
-| <img src="./apps/hysteria2/logo.png" width="40"/> | [hysteria2](./apps/hysteria2) | **Hysteria2 Masquerade** | 工具 | amd64 / arm64 | Hysteria2 QUIC/UDP，挂载宿主机 LE 证书，内置 masquerade 伪装站点，自动生成分享链接 |
+| <img src="./apps/hysteria2/logo.png" width="40"/> | [hysteria2](./apps/hysteria2) | **Hysteria2 Masquerade** | 工具 | amd64 / arm64 | Hysteria2 QUIC/UDP，挂载宿主机 LE 证书，内置 masquerade 伪装站点；UDP 443 可与 OpenResty 的 TCP 443 同号 |
 | <img src="./apps/kasmweb-chrome/logo.png" width="40"/> | [kasmweb-chrome](./apps/kasmweb-chrome) | **Kasm Chrome** | 工具 | amd64 | Web 端 60fps 高清流畅 Chrome 浏览器，支持 WebRTC 声音播放、剪贴板及全量书签持久化 |
 | <img src="./apps/sing-box-reality/logo.png" width="40"/> | [sing-box-reality](./apps/sing-box-reality) | **VLESS WS TLS** | 工具 | amd64 | 基于 sing-box 的 VLESS WebSocket 入站，TLS 在前置反代终止，自动生成分享链接 |
 | <img src="./apps/sing-box-socks5/logo.png" width="40"/> | [sing-box-socks5](./apps/sing-box-socks5) | **sing-box SOCKS5** | 工具 | amd64 / arm64 / arm/v7 | 事件驱动 SOCKS5 代理，替代 3proxy；可选同端口 HTTP，支持 host 网络 |
