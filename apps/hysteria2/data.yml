@@ -1,0 +1,26 @@
+name: Hysteria2 Masquerade
+tags:
+  - Tool
+title: Hysteria2 Masquerade
+description: Hysteria2 with TLS certificates and HTTP/3 masquerade proxy
+
+additionalProperties:
+  key: hysteria2
+  name: Hysteria2 Masquerade
+  tags:
+    - Tool
+  shortDescZh: Hysteria2 + 真实证书 + 伪装站点
+  shortDescEn: Hysteria2 with real TLS certs and site masquerade
+  type: tool
+  crossVersionUpdate: true
+  limit: 1
+  recommend: 0
+  website: https://v2.hysteria.network/
+  github: https://github.com/apernet/hysteria
+  document: https://v2.hysteria.network/docs/getting-started/Server/
+  description:
+    en: Hysteria2 QUIC/UDP proxy using host Let's Encrypt certificates and built-in masquerade (proxy or static site) so scanners see a normal HTTPS site. For Docker and 1Panel.
+    zh: 基于 Hysteria2 的 QUIC/UDP 代理。使用宿主机 Let's Encrypt 证书，并开启内置伪装（反代或静态页），扫描器看到的是普通 HTTPS 站点。适用于 Docker / 1Panel 部署
+  architectures:
+    - amd64
+    - arm64
