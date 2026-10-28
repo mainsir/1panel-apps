@@ -1,0 +1,26 @@
+services:
+  hysteria2:
+    image: tobyxdd/hysteria:v2.13.0
+    container_name: ${CONTAINER_NAME}
+    restart: always
+    network_mode: host
+    working_dir: /data
+    volumes:
+      - ./data:/data
+      - ./www:/www/masq:ro
+      - ./scripts/entrypoint.sh:/entrypoint.sh:ro
+      - ./.env:/run/panel.env:ro
+      - ${CERT_DIR}:/data/certs:ro
+    environment:
+      PANEL_APP_PORT_UDP: ${PANEL_APP_PORT_UDP}
+      PUBLIC_HOST: ${PUBLIC_HOST}
+      PASSWORD: ${PASSWORD}
+      CERT_DIR: ${CERT_DIR}
+      MASQUERADE_URL: ${MASQUERADE_URL}
+      SOCKS5_HOST: ${SOCKS5_HOST}
+      SOCKS5_PORT: ${SOCKS5_PORT}
+      SOCKS5_USER: ${SOCKS5_USER}
+      SOCKS5_PASS: ${SOCKS5_PASS}
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    labels:
+      createdBy: "Apps"

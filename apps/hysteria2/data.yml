@@ -19,8 +19,8 @@ additionalProperties:
   github: https://github.com/apernet/hysteria
   document: https://v2.hysteria.network/docs/getting-started/Server/
   description:
-    en: Hysteria2 QUIC/UDP proxy using host Let's Encrypt certificates and built-in masquerade (proxy or static site) so scanners see a normal HTTPS site. For Docker and 1Panel.
-    zh: 基于 Hysteria2 的 QUIC/UDP 代理。使用宿主机 Let's Encrypt 证书，并开启内置伪装（反代或静态页），扫描器看到的是普通 HTTPS 站点。适用于 Docker / 1Panel 部署
+    en: Hysteria2 QUIC/UDP proxy using host Let's Encrypt certificates and built-in masquerade. Slim 1Panel form; optional SOCKS5 egress when set. For Docker and 1Panel.
+    zh: 基于 Hysteria2 的 QUIC/UDP 代理。使用宿主机 Let's Encrypt 证书与内置伪装。表单已精简；可选填写 SOCKS5 落地，留空则直连。适用于 Docker / 1Panel
   architectures:
     - amd64
     - arm64
