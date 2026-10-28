@@ -10,7 +10,10 @@ Use it when the host already has a website certificate (Let's Encrypt). Proxy on
 - Configurable WebSocket path, 2048-byte early data, header `Sec-WebSocket-Protocol`
 - No TLS or Reality inside sing-box; the reverse proxy presents the certificate
 - Generates a UUID on first start and stores it in `keys.env`; later restarts reuse it
-- Rewrites `config.json` from the form on every start and writes an importable link to `client.txt`
+- Optional multi-user: form `USERS` lines are `name|uuid-or-empty|max_ips` (or `;`-separated); leave empty for single-user
+- One container, one WebSocket path and camouflage site; each user gets a UUID and a `client.txt` link
+- `max_ips` is a best-effort concurrent source-IP cap via Clash API; `0` or empty means unlimited; no quota or rate limit
+- Rewrites `config.json` / `users.json` from the form on every start and writes importable links to `client.txt`
 - Optional egress: when Socks5 is set, inbound traffic leaves through that proxy; otherwise direct
 - Host networking so OpenResty on the same machine can reach `127.0.0.1`; architecture: amd64
 
@@ -25,7 +28,8 @@ Use it when the host already has a website certificate (Let's Encrypt). Proxy on
 | Link name | SingBox-WS | |
 | Fingerprint | chrome | Written into the share link |
 | Timezone | Asia/Shanghai | |
-| Egress proxy (Socks5) | Empty (direct) | Optional |
+| Egress proxy (Socks5) | Empty (direct) | Optional (advanced) |
+| Users (USERS) | Empty (single-user) | One line `name\|uuid-or-empty\|max_ips`; `;` also works |
 
 ## Usage
 
@@ -55,6 +59,22 @@ location = /cdn-cgi/assets/v7kQm2pLx9nR {
 }
 ```
 
+### Multi-user
+
+Leave the Users field empty for 1.0.2-compatible single-user mode (one UUID in `keys.env`).
+
+To share one domain, path, and camouflage site among several people, add one line per user (`;` works in a single-line 1Panel field):
+
+```
+alice||2
+bob|22222222-2222-4222-8222-222222222222|1
+carol||0
+```
+
+Format: `name|uuid-or-empty|max_ips`. An empty UUID is generated and persisted by name in `users.json`. `max_ips=0` means unlimited. Each user gets a `vless://` link in `client.txt`.
+
+When any `max_ips>0`, the local Clash API is enabled and `ip-limit.sh` best-effort closes excess connections. This is not kernel rate limiting and there is no traffic quota.
+
 ### Egress proxy
 
 To change the egress address, set the Socks5 host and port together. When the proxy requires authentication, set both username and password. Ports must be from 1 to 65535. A partial setting makes the container refuse to start.
@@ -63,9 +83,10 @@ To change the egress address, set the Socks5 host and port together. When the pr
 
 | Path | Description |
 |---|---|
-| `./data/keys.env` | UUID (persisted automatically) |
+| `./data/keys.env` | Primary UUID (persisted; single-user compatible) |
+| `./data/users.json` | Multi-user names, UUIDs, max_ips |
 | `./data/config.json` | sing-box runtime config |
-| `./data/client.txt` | Node link and client parameters |
+| `./data/client.txt` | Node links and client parameters |
 
 ## Image
 

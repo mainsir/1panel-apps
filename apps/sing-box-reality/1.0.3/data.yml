@@ -1,0 +1,90 @@
+additionalProperties:
+  formFields:
+    - default: 18443
+      edit: true
+      envKey: PANEL_APP_PORT_TCP
+      labelZh: 本机监听端口
+      labelEn: Local listen port
+      required: true
+      rule: paramPort
+      type: number
+
+    - default: 127.0.0.1
+      edit: true
+      envKey: LISTEN_HOST
+      labelZh: 监听地址
+      labelEn: Listen address
+      required: true
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: PUBLIC_HOST
+      labelZh: 客户端域名
+      labelEn: Client domain
+      required: true
+      type: text
+
+    - default: /cdn-cgi/assets/v7kQm2pLx9nR
+      edit: true
+      envKey: WS_PATH
+      labelZh: WebSocket 路径
+      labelEn: WebSocket path
+      required: true
+      type: text
+
+    - default: SingBox-WS
+      edit: true
+      envKey: LINK_NAME
+      labelZh: 节点链接备注名
+      labelEn: Node link name
+      required: true
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: USERS
+      labelZh: 多用户(可选) 每行 name|uuid留空自动|max_ips
+      labelEn: Users(optional) one per line name|uuid-or-empty|max_ips
+      required: false
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_HOST
+      labelZh: "[高级可选] 出口 Socks5 地址"
+      labelEn: "[Advanced optional] Egress Socks5 host"
+      required: false
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_PORT
+      labelZh: "[高级可选] 出口 Socks5 端口"
+      labelEn: "[Advanced optional] Egress Socks5 port"
+      required: false
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_USER
+      labelZh: "[高级可选] 出口 Socks5 账号"
+      labelEn: "[Advanced optional] Egress Socks5 username"
+      required: false
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_PASS
+      labelZh: "[高级可选] 出口 Socks5 密码"
+      labelEn: "[Advanced optional] Egress Socks5 password"
+      required: false
+      type: password
+
+    - default: Asia/Shanghai
+      edit: true
+      envKey: TZ
+      labelZh: 时区
+      labelEn: Timezone
+      required: true
+      type: text
