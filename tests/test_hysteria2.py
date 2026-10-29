@@ -208,5 +208,58 @@ class HysteriaEntrypointTests(unittest.TestCase):
                 self.assertFalse(started.exists())
 
 
+class Hysteria103PackageTests(unittest.TestCase):
+    def test_socks_labels_are_plain_and_runtime_is_unchanged(self):
+        old = APP / '1.0.2'
+        new = APP / '1.0.3'
+        self.assertEqual((old / 'docker-compose.yml').read_bytes(),
+                         (new / 'docker-compose.yml').read_bytes())
+        self.assertEqual((old / 'scripts' / 'entrypoint.sh').read_bytes(),
+                         (new / 'scripts' / 'entrypoint.sh').read_bytes())
+        old_form = yaml.safe_load((old / 'data.yml').read_text())
+        new_form = yaml.safe_load((new / 'data.yml').read_text())
+        old_fields = {field['envKey']: field for field in old_form['additionalProperties']['formFields']}
+        new_fields = {field['envKey']: field for field in new_form['additionalProperties']['formFields']}
+        self.assertEqual(set(old_fields), set(new_fields))
+        expected = {
+            'SOCKS5_HOST': ('SOCKS5 落地地址（留空=直连）', 'SOCKS5 egress host (empty=direct)'),
+            'SOCKS5_PORT': ('SOCKS5 落地端口（留空=直连）', 'SOCKS5 egress port (empty=direct)'),
+            'SOCKS5_USER': ('SOCKS5 账号（可选）', 'SOCKS5 username (optional)'),
+            'SOCKS5_PASS': ('SOCKS5 密码（可选）', 'SOCKS5 password (optional)'),
+        }
+        for key, old_field in old_fields.items():
+            new_field = dict(new_fields[key])
+            previous = dict(old_field)
+            if key in expected:
+                zh, en = expected[key]
+                self.assertEqual(new_field['labelZh'], zh)
+                self.assertEqual(new_field['labelEn'], en)
+                self.assertNotIn('高级', new_field['labelZh'])
+                self.assertNotIn('Advanced', new_field['labelEn'])
+                self.assertNotIn('[', new_field['labelEn'])
+                self.assertNotIn(']', new_field['labelEn'])
+                self.assertIn('【高级】', previous['labelZh'])
+                self.assertIn('[Advanced]', previous['labelEn'])
+                for field in (new_field, previous):
+                    field.pop('labelZh')
+                    field.pop('labelEn')
+            self.assertEqual(previous, new_field)
+        self.assertNotIn('PANEL_APP_PORT', ''.join(new_fields))
+        self.assertNotIn('TZ', new_fields)
+        self.assertNotIn('PANEL_APP_PORT_UDP', new_fields)
+        compose_text = (new / 'docker-compose.yml').read_text()
+        self.assertIn('HY2_UDP_PORT', compose_text)
+        self.assertNotIn('TZ', compose_text)
+        self.assertNotIn('PANEL_APP_PORT', compose_text)
+        for name in ('README.md', 'README_en.md'):
+            current = (APP / name).read_text()
+            self.assertEqual(current, (new / name).read_text())
+            self.assertNotIn('【高级】', current)
+            self.assertNotIn('[Advanced]', current)
+            self.assertIn('1.0.3', current)
+        self.assertIn('【高级】', (old / 'README.md').read_text())
+        self.assertIn('[Advanced]', (old / 'README_en.md').read_text())
+
+
 if __name__ == '__main__':
     unittest.main()

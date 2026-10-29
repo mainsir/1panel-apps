@@ -13,9 +13,11 @@ Prefer **UDP 443**; coexists with OpenResty on **TCP 443**. From **1.0.2**, the 
 | Password | Empty = auto |
 | Cert directory | Host `ssl` dir (`fullchain.pem` / `privkey.pem` fixed) |
 | Masquerade URL | Default `https://www.microsoft.com` |
-| [Advanced] SOCKS5 | All empty = **direct**; set host+port for SOCKS5 egress |
+| SOCKS5 egress | All empty = **direct**; set host and port for SOCKS5 egress. Username and password are optional |
 
-Removed from the form: timezone, cert/key filenames, masquerade type, bandwidth limits, ignoreClientBandwidth, link name. Edit `data/config.yaml` for advanced tweaks.
+Removed from the form: timezone, cert/key filenames, masquerade type, bandwidth limits, ignoreClientBandwidth, link name. Edit `data/config.yaml` for further tweaks.
+
+From **1.0.3**, the four SOCKS5 fields no longer use an Advanced prefix. Listen port, certificate, and egress behavior match 1.0.2.
 
 Upgrades from 1.0.0 / 1.0.1 keep the previous UDP listen port. Before the new field is saved, the parameter form may show the default 443; if the old port was not 443, set it back before saving.
 

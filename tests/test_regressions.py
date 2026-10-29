@@ -565,5 +565,150 @@ class WsPackageTests(unittest.TestCase):
         self.assertTrue((self.app / '1.0.1' / 'docker-compose.yml').is_file())
 
 
+class Ws103EntrypointTests(WsEntrypointTests):
+    def setUp(self):
+        super().setUp()
+        self.entry = ROOT / 'apps/sing-box-reality/1.0.3/scripts/entrypoint.sh'
+
+    def test_path_host_and_port_changes(self):
+        from urllib.parse import parse_qs, unquote, urlsplit
+        result = self.start(PUBLIC_HOST='[2001:db8::1]', WS_PATH='cdn-cgi/custom',
+                            PANEL_APP_PORT_TCP='018443', LISTEN_HOST='::1',
+                            LINK_NAME='中文 node#1 % &')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        inbound = self.config()['inbounds'][0]
+        self.assertEqual(inbound['listen'], '127.0.0.1')
+        self.assertEqual(inbound['listen_port'], 18443)
+        self.assertEqual(inbound['transport']['path'], '/cdn-cgi/custom')
+        parsed = urlsplit(self.link())
+        self.assertEqual(parsed.hostname, '2001:db8::1')
+        self.assertEqual(parsed.port, 443)
+        self.assertEqual(unquote(parse_qs(parsed.query)['path'][0]), '/cdn-cgi/custom')
+        self.assertEqual(unquote(parse_qs(parsed.query)['sni'][0]), '2001:db8::1')
+        self.assertEqual(unquote(parsed.fragment), 'SingBox-WS')
+        self.assertIn('本机入站: 127.0.0.1:18443', (self.data / 'client.txt').read_text())
+
+    def test_panel_env_preserves_dollar_values(self):
+        env_file = self.work / 'panel.env'
+        env_file.write_text(
+            'PUBLIC_HOST=cdn.example.com\n'
+            'WS_PATH=/a$b\n'
+            'LISTEN_HOST=::1\n'
+            'LINK_NAME=name$1\n'
+            'TZ=Asia/Shanghai\n'
+            'SOCKS5_HOST=proxy.example.com\n'
+            'SOCKS5_USER=file user\n'
+            'SOCKS5_PASS=p@ss"w$ord\n')
+        result = self.start(PUBLIC_HOST='from-env.example', WS_PATH='/from-env',
+                            LISTEN_HOST='0.0.0.0', LINK_NAME='from-env',
+                            SOCKS5_HOST='proxy.example.com', SOCKS5_PORT='1080',
+                            SOCKS5_USER='env-user', SOCKS5_PASS='expanded',
+                            PANEL_ENV_FILE=str(env_file))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        inbound = self.config()['inbounds'][0]
+        self.assertEqual(inbound['listen'], '127.0.0.1')
+        self.assertEqual(inbound['transport']['path'], '/a$b')
+        outbound = self.config()['outbounds'][0]
+        self.assertEqual(outbound['username'], 'file user')
+        self.assertEqual(outbound['password'], 'p@ss"w$ord')
+        self.assertTrue(self.link().endswith('#SingBox-WS'))
+        self.assertNotIn('name%241', self.link())
+
+    def test_invalid_values_do_not_start(self):
+        cases = [
+            dict(PUBLIC_HOST='https://cdn.example.com'),
+            dict(PUBLIC_HOST='cdn.example.com:443'),
+            dict(PUBLIC_HOST='cdn.example.com/path'),
+            dict(PUBLIC_HOST='bad host.example'),
+            dict(PUBLIC_HOST='cdn.example.com', PANEL_APP_PORT_TCP='0'),
+            dict(PUBLIC_HOST='cdn.example.com', PANEL_APP_PORT_TCP='65536'),
+            dict(PUBLIC_HOST='cdn.example.com', WS_PATH='/has\nnewline'),
+            dict(PUBLIC_HOST='cdn.example.com', SOCKS5_HOST='proxy.example.com'),
+            dict(PUBLIC_HOST='cdn.example.com', SOCKS5_PORT='1080'),
+            dict(PUBLIC_HOST='cdn.example.com', SOCKS5_USER='user', SOCKS5_PASS='password'),
+            dict(PUBLIC_HOST='cdn.example.com', SOCKS5_HOST='proxy.example.com',
+                 SOCKS5_PORT='1080', SOCKS5_USER='user'),
+            dict(PUBLIC_HOST='cdn.example.com', SOCKS5_HOST='proxy.example.com',
+                 SOCKS5_PORT='01080', SOCKS5_PASS='password'),
+            dict(PUBLIC_HOST='cdn.example.com', SOCKS5_HOST='proxy.example.com',
+                 SOCKS5_PORT='abc'),
+        ]
+        for values in cases:
+            with self.subTest(values=values):
+                started = self.data / 'started'
+                if started.exists():
+                    started.unlink()
+                result = self.start(**values)
+                self.assertNotEqual(result.returncode, 0, result.stderr)
+                self.assertFalse(started.exists())
+
+    def test_bad_listen_host_and_link_name_are_ignored(self):
+        result = self.start(PUBLIC_HOST='cdn.example.com', LISTEN_HOST='127.0.0.1:18443',
+                            LINK_NAME='bad\nname')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.config()['inbounds'][0]['listen'], '127.0.0.1')
+        self.assertTrue(self.link().endswith('#SingBox-WS'))
+
+
+class Ws103PackageTests(unittest.TestCase):
+    def setUp(self):
+        self.app = ROOT / 'apps/sing-box-reality'
+        self.version = self.app / '1.0.3'
+
+    def test_form_drops_tz_listen_host_and_link_name(self):
+        import yaml
+        form = yaml.safe_load((self.version / 'data.yml').read_text())
+        fields = {field['envKey']: field for field in form['additionalProperties']['formFields']}
+        compose_text = (self.version / 'docker-compose.yml').read_text()
+        compose = yaml.safe_load(compose_text)
+        service = compose['services']['sing-box-reality']
+        self.assertEqual(set(fields), {
+            'PANEL_APP_PORT_TCP', 'PUBLIC_HOST', 'WS_PATH',
+            'SOCKS5_HOST', 'SOCKS5_PORT', 'SOCKS5_USER', 'SOCKS5_PASS'})
+        self.assertEqual(set(service['environment']), set(fields))
+        used = set(__import__('re').findall(r'\$\{([A-Za-z0-9_]+)\}', compose_text))
+        self.assertTrue(used <= set(fields) | {'CONTAINER_NAME'})
+        for key in ('TZ', 'LISTEN_HOST', 'LINK_NAME'):
+            self.assertNotIn(key, fields)
+            self.assertNotIn('${%s}' % key, compose_text)
+        self.assertEqual(service['image'], 'ghcr.io/sagernet/sing-box:v1.13.14')
+        self.assertEqual(service['network_mode'], 'host')
+        self.assertEqual(fields['PANEL_APP_PORT_TCP']['default'], 18443)
+        self.assertEqual(fields['PANEL_APP_PORT_TCP']['type'], 'number')
+        self.assertEqual(fields['PANEL_APP_PORT_TCP']['rule'], 'paramPort')
+        socks = {
+            'SOCKS5_HOST': ('SOCKS5 落地地址（留空=直连）', 'SOCKS5 egress host (empty=direct)'),
+            'SOCKS5_PORT': ('SOCKS5 落地端口（留空=直连）', 'SOCKS5 egress port (empty=direct)'),
+            'SOCKS5_USER': ('SOCKS5 账号（可选）', 'SOCKS5 username (optional)'),
+            'SOCKS5_PASS': ('SOCKS5 密码（可选）', 'SOCKS5 password (optional)'),
+        }
+        for key, (zh, en) in socks.items():
+            self.assertEqual(fields[key]['default'], '')
+            self.assertFalse(fields[key]['required'])
+            self.assertEqual(fields[key]['labelZh'], zh)
+            self.assertEqual(fields[key]['labelEn'], en)
+            self.assertNotIn('高级', fields[key]['labelZh'])
+            self.assertNotIn('Advanced', fields[key]['labelEn'])
+            self.assertNotIn('[', fields[key]['labelEn'])
+            self.assertNotIn(']', fields[key]['labelEn'])
+        self.assertEqual(fields['SOCKS5_PASS']['type'], 'password')
+        entry = (self.version / 'scripts/entrypoint.sh').read_text()
+        self.assertIn('\nLISTEN_HOST=127.0.0.1\n', entry)
+        self.assertIn('\nLINK_NAME=SingBox-WS\n', entry)
+        self.assertNotIn('load_panel_value LISTEN_HOST', entry)
+        self.assertNotIn('load_panel_value LINK_NAME', entry)
+        self.assertNotIn('TZ', entry)
+        self.assertTrue(os.access(self.version / 'scripts/entrypoint.sh', os.X_OK))
+        for name in ('README.md', 'README_en.md'):
+            text = (self.app / name).read_text()
+            self.assertIn('1.0.3', text)
+            self.assertIn('127.0.0.1', text)
+            self.assertIn('SingBox-WS', text)
+            self.assertNotIn('Asia/Shanghai', text)
+        old = yaml.safe_load((self.app / '1.0.2' / 'data.yml').read_text())
+        old_keys = {field['envKey'] for field in old['additionalProperties']['formFields']}
+        self.assertEqual(old_keys, set(fields) | {'LISTEN_HOST', 'LINK_NAME', 'TZ'})
+
+
 if __name__ == '__main__':
     unittest.main()
