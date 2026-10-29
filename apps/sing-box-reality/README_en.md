@@ -12,20 +12,20 @@ Use it when the host already has a website certificate (Let's Encrypt). Proxy on
 - Generates a UUID on first start and stores it in `keys.env`; later restarts reuse it
 - Rewrites `config.json` from the form on every start and writes an importable link to `client.txt`
 - Optional egress: when Socks5 is set, inbound traffic leaves through that proxy; otherwise direct
-- Host networking so OpenResty on the same machine can reach `127.0.0.1`; architecture: amd64
+- Host networking, always listening on `127.0.0.1`, so OpenResty on the same machine can reach it; architecture: amd64
+- From **1.0.3**, the install form has no timezone, listen address, or link name. The container keeps the image timezone; the inbound is fixed at `127.0.0.1`; the share-link remark is fixed as `SingBox-WS`
 
 ## Defaults
 
 | Item | Value | Description |
 |---|---|---|
 | Local listen port | 18443 | For the reverse proxy only; clients do not use this port |
-| Listen address | 127.0.0.1 | Loopback by default |
+| Listen address | 127.0.0.1 | Fixed loopback; not a form field |
 | WebSocket path | `/cdn-cgi/assets/v7kQm2pLx9nR` | Change this to your own hidden path |
 | Client domain | Set at install | Used for the share link, SNI, and Host |
-| Link name | SingBox-WS | |
+| Link name | SingBox-WS | Fixed in the share link; not a form field |
 | Fingerprint | chrome | Written into the share link |
-| Timezone | Asia/Shanghai | |
-| Egress proxy (Socks5) | Empty (direct) | Optional |
+| SOCKS5 egress | Empty (direct) | Empty host and port mean direct; username and password are optional |
 
 ## Usage
 
@@ -57,7 +57,7 @@ location = /cdn-cgi/assets/v7kQm2pLx9nR {
 
 ### Egress proxy
 
-To change the egress address, set the Socks5 host and port together. When the proxy requires authentication, set both username and password. Ports must be from 1 to 65535. A partial setting makes the container refuse to start.
+To change the egress address, set the SOCKS5 host and port together. Leave both empty for a direct outbound. When the proxy requires authentication, set both username and password. Ports must be from 1 to 65535. A partial setting makes the container refuse to start.
 
 ## Data
 
