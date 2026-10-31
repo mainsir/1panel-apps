@@ -710,5 +710,23 @@ class Ws103PackageTests(unittest.TestCase):
         self.assertEqual(old_keys, set(fields) | {'LISTEN_HOST', 'LINK_NAME', 'TZ'})
 
 
+class GiteaSqliteTests(unittest.TestCase):
+    def test_new_version_forces_container_port_and_closed_registration(self):
+        import yaml
+
+        app = ROOT / 'apps/gitea-sqlite'
+        compose = yaml.safe_load((app / '28.2.0/docker-compose.yml').read_text())
+        service = compose['services']['gitea']
+        self.assertEqual(service['image'], 'gitea/gitea:28.2.0')
+        self.assertIn('${PANEL_APP_PORT_HTTP}:3000', service['ports'])
+        self.assertIn('${PANEL_APP_PORT_SSH}:22', service['ports'])
+        self.assertIn('GITEA__server__HTTP_PORT=3000', service['environment'])
+        self.assertIn('DISABLE_REGISTRATION=true', service['environment'])
+        self.assertNotIn('GITEA__service__DISABLE_REGISTRATION=true', service['environment'])
+        self.assertTrue(os.access(app / '28.2.0/scripts/init.sh', os.X_OK))
+        old = yaml.safe_load((app / '1.27.3/docker-compose.yml').read_text())
+        self.assertEqual(old['services']['gitea']['image'], 'gitea/gitea:1.27.3')
+
+
 if __name__ == '__main__':
     unittest.main()

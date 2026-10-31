@@ -13,7 +13,7 @@ additionalProperties:
   description:
     zh: Gitea 轻量代码托管平台 SQLite 单容器版本，无需安装 MySQL，1C1G 小内存服务器也能流畅运行，个人开发者自建首选
     en: Lightweight Gitea code hosting in a single container with SQLite. No MySQL required, runs smoothly even on 1C1G servers.
-  type: tool
+  type: website
   crossVersionUpdate: true
   limit: 0
   recommend: 0
