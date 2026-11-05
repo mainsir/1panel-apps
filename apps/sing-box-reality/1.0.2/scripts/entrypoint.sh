@@ -78,39 +78,43 @@ SB_UUID=''
 PRIVATE_KEY=''
 PUBLIC_KEY=''
 SHORT_ID=''
-if [ -f "$KEYS_FILE" ]; then
-  # Read persisted values as data, without executing shell statements.
-  while IFS='=' read -r key value; do
+NEW_KEYS=0
+if [ -e "$KEYS_FILE" ]; then
+  [ -f "$KEYS_FILE" ] && [ -r "$KEYS_FILE" ] || fail "keys.env is not a readable file"
+  # Parse data only. Missing or invalid persisted secrets must not rotate identity.
+  while IFS='=' read -r key value || [ -n "$key" ]; do
+    value=$(printf '%s' "$value" | tr -d '\r')
     case "$key" in
-      SB_UUID) SB_UUID="$value" ;;
-      PRIVATE_KEY) PRIVATE_KEY="$value" ;;
-      PUBLIC_KEY) PUBLIC_KEY="$value" ;;
-      SHORT_ID) SHORT_ID="$value" ;;
+      SB_UUID) [ -z "$SB_UUID" ] || fail "duplicate SB_UUID"; SB_UUID="$value" ;;
+      PRIVATE_KEY) [ -z "$PRIVATE_KEY" ] || fail "duplicate PRIVATE_KEY"; PRIVATE_KEY="$value" ;;
+      PUBLIC_KEY) [ -z "$PUBLIC_KEY" ] || fail "duplicate PUBLIC_KEY"; PUBLIC_KEY="$value" ;;
+      SHORT_ID) [ -z "$SHORT_ID" ] || fail "duplicate SHORT_ID"; SHORT_ID="$value" ;;
+      '') [ -z "$value" ] || fail "invalid keys.env line" ;;
+      *) fail "invalid keys.env field: $key" ;;
     esac
   done < "$KEYS_FILE"
-fi
-
-if [ -z "$SB_UUID" ]; then
+else
+  [ ! -L "$KEYS_FILE" ] || fail "keys.env is a broken symlink"
+  NEW_KEYS=1
   SB_UUID=$(sing-box generate uuid)
-fi
-if [ -z "$PRIVATE_KEY" ] || [ -z "$PUBLIC_KEY" ]; then
   KP=$(sing-box generate reality-keypair)
   PRIVATE_KEY=$(printf '%s\n' "$KP" | sed -n 's/^PrivateKey:[[:space:]]*//p')
   PUBLIC_KEY=$(printf '%s\n' "$KP" | sed -n 's/^PublicKey:[[:space:]]*//p')
-fi
-if [ -z "$SHORT_ID" ]; then
   SHORT_ID=$(sing-box generate rand 4 --hex)
 fi
-[ -n "$SB_UUID" ] && [ -n "$PRIVATE_KEY" ] && [ -n "$PUBLIC_KEY" ] &&
-  [ -n "$SHORT_ID" ] || fail "failed to generate secrets"
 
-cat > "$KEYS_FILE" <<KEYS
-SB_UUID=$SB_UUID
-PRIVATE_KEY=$PRIVATE_KEY
-PUBLIC_KEY=$PUBLIC_KEY
-SHORT_ID=$SHORT_ID
-KEYS
-chmod 600 "$KEYS_FILE"
+printf '%s\n' "$SB_UUID" | grep -Eq '^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$' ||
+  fail "invalid UUID in keys.env; restore a valid backup"
+for value in "$PRIVATE_KEY" "$PUBLIC_KEY"; do
+  printf '%s\n' "$value" | grep -Eq '^[A-Za-z0-9_-]{43}$' ||
+    fail "invalid Reality key in keys.env; restore a valid backup"
+done
+printf '%s\n' "$SHORT_ID" | grep -Eq '^([0-9a-fA-F]{2}){1,8}$' ||
+  fail "invalid short ID in keys.env; restore a valid backup"
+
+WORK_DIR=$(mktemp -d "$DATA_DIR/.startup-XXXXXX")
+trap 'rm -rf "$WORK_DIR"' EXIT
+trap 'exit 1' HUP INT TERM
 
 if [ -n "$SOCKS5_HOST" ]; then
   AUTH_FIELDS=''
@@ -124,13 +128,13 @@ else
   OUTBOUND_DESC=direct
 fi
 
-cat > "$CONFIG_FILE" <<CONFIG
+cat > "$WORK_DIR/config.json" <<CONFIG
 {
   "log": {"level": "info", "timestamp": true},
   "inbounds": [{
     "type": "vless",
     "tag": "vless-in",
-    "listen": "0.0.0.0",
+    "listen": "::",
     "listen_port": $PORT,
     "users": [{"uuid": $(json_string "$SB_UUID"), "flow": "xtls-rprx-vision"}],
     "tls": {
@@ -147,8 +151,7 @@ cat > "$CONFIG_FILE" <<CONFIG
   "outbounds": [$OUTBOUND]
 }
 CONFIG
-chmod 600 "$CONFIG_FILE"
-sing-box check -c "$CONFIG_FILE"
+sing-box check -c "$WORK_DIR/config.json"
 
 PUBLIC_HOST="${PUBLIC_HOST:-<服务器IP>}"
 case "$PUBLIC_HOST" in
@@ -158,7 +161,7 @@ case "$PUBLIC_HOST" in
 esac
 SHARE_LINK="vless://$SB_UUID@$LINK_HOST:$PORT?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$(url_encode "$SNI")&fp=chrome&pbk=$(url_encode "$PUBLIC_KEY")&sid=$(url_encode "$SHORT_ID")&type=tcp#$(url_encode "$LINK_NAME")"
 
-cat > "$CLIENT_FILE" <<CLIENT
+cat > "$WORK_DIR/client.txt" <<CLIENT
 ========== VLESS Reality ==========
 地址:   $PUBLIC_HOST
 端口:   $PORT
@@ -174,7 +177,21 @@ sid:    $SHORT_ID
 $SHARE_LINK
 ===================================
 CLIENT
-chmod 600 "$CLIENT_FILE"
+if [ "$NEW_KEYS" = 1 ]; then
+  cat > "$WORK_DIR/keys.env" <<KEYS
+SB_UUID=$SB_UUID
+PRIVATE_KEY=$PRIVATE_KEY
+PUBLIC_KEY=$PUBLIC_KEY
+SHORT_ID=$SHORT_ID
+KEYS
+  # Publish a complete file without replacing credentials from a concurrent start.
+  ln "$WORK_DIR/keys.env" "$KEYS_FILE"
+fi
+chmod 600 "$KEYS_FILE"
+mv -f "$WORK_DIR/config.json" "$CONFIG_FILE"
+mv -f "$WORK_DIR/client.txt" "$CLIENT_FILE"
+rm -rf "$WORK_DIR"
+trap - EXIT HUP INT TERM
 echo "OK port=$PORT sni=$SNI outbound=$OUTBOUND_DESC"
 echo "client info: $CLIENT_FILE"
 exec sing-box run -c "$CONFIG_FILE"

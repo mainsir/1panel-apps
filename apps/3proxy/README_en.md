@@ -1,32 +1,25 @@
 ## Introduction
 
-3proxy is a tiny, battle-tested free proxy server supporting HTTP/HTTPS and SOCKS4/5. This package uses an environment-variable based Docker image for one-click install in 1Panel, with authentication enabled by default.
+This package provides HTTP and SOCKS5 proxy services. Credentials, ports, and DNS resolvers are configured in the installation form. The image is maintained by [tarampampam/3proxy-docker](https://github.com/tarampampam/3proxy-docker).
 
-## Features
+## Default ports
 
-- HTTP and SOCKS5 listeners at the same time
-- Ports, credentials, and DNS are configured via install form
-- Joins `1panel-network` for communication with other 1Panel apps
-- Env-based config is easy to back up and migrate
-
-## Default Ports
-
-| Purpose | Host (default) | Container |
+| Purpose | Host port | Container port |
 |---|---|---|
 | HTTP proxy | 3128 | 3128 |
 | SOCKS5 proxy | 1080 | 1080 |
 
 ## Usage
 
-After install:
+Set a proxy username and password during installation. In the client, select HTTP or SOCKS5 and enter the server address, corresponding port, and credentials.
 
-- HTTP: `http://user:pass@SERVER_IP:HTTP_PORT`
-- SOCKS5: `socks5://user:pass@SERVER_IP:SOCKS_PORT`
+The connection limit applies separately to each protocol and supports 128, 256, 512, or 1024 connections. The container file descriptor limit is 8192. The application joins `1panel-network` for communication with applications on that network.
 
-> Do not expose an open (no-auth) proxy to the public internet.
+## Configuration and backup
 
-The connection limit applies to each protocol and supports 128, 256, 512, or 1024 connections. The file descriptor limit is 8192 to allow both listeners and additional overhead.
+Configuration is generated from environment variables. There is no persistent application-data mount. Preserve the instance Compose file and `.env` parameters when backing up or migrating.
 
-## Data Directory
+## Runtime
 
-This package is env-config based and has no persistent business data volume. For full custom `3proxy.cfg`, use a config-file mount approach instead.
+- Image: `ghcr.io/tarampampam/3proxy:2.3.0`
+- Architectures: amd64, arm64, arm/v7

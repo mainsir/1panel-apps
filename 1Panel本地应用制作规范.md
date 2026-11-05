@@ -38,6 +38,8 @@ apps/<app-key>/
 
 > 官方商店用上游版本号命名版本目录。自封装应用（版本号和镜像无关）可以用 `1.0.0` 起步，但每次改镜像版本都要新建目录，不要原地覆盖。
 
+修改启动脚本或其他会影响已安装实例行为的配置时，也应发布新包版本，使面板能够识别升级。
+
 ---
 
 ## 2. 根目录 `data.yml`
@@ -313,15 +315,16 @@ chown -R 1000:1000 ./data
 2. 定 `app-key` 和版本号，建目录骨架（1Panel 宿主机上也可以用 `1panel app init <key> <version>` 生成）。
 3. 写根 `data.yml`、`README.md`、`README_en.md`、`logo.png`。
 4. 写版本 `data.yml` 和 `docker-compose.yml`，变量一一对应。
-5. 跑校验：
+5. 执行本仓库校验（与 CI 共用入口）：
 
    ```bash
-   git clone --depth 1 https://github.com/1Panel-dev/1Panel-appstore-skills.git /tmp/skills
-   python3 /tmp/skills/scripts/validate_app_package.py apps/<app-key>
+   python3 -m pip install pyyaml pillow
+   python3 scripts/validate-apps.py
+   python3 -m unittest discover -s tests -v
    bash -n apps/<app-key>/<version>/scripts/*.sh
    ```
 
-6. 复制到 `/opt/1panel/resource/apps/local/`，应用商店点「更新应用列表」，在「本地」分类安装。
+6. 提交应用包改动后，使用同步脚本更新 `/opt/1panel/resource/apps/local/`，在应用商店点击「更新应用列表」，切换到「本地」分类安装。
 7. 测试：安装、启动、停止、重启、改参数、卸载、重装；有多个版本时测升级。确认端口、持久化数据、日志正常。
 
 ---
@@ -331,10 +334,14 @@ chown -R 1000:1000 ./data
 同步到本机（见 [README.md](./README.md) 和 [scripts/sync-to-1panel.sh](./scripts/sync-to-1panel.sh)）：
 
 ```bash
-cp -rf apps/* /opt/1panel/resource/apps/local/
+REPO_URL=/opt/1panel-apps bash scripts/sync-to-1panel.sh
 ```
 
-`cp -rf` 只新增和覆盖。仓库里删除的应用，服务器上要手动删：
+同步依赖 Git、rsync 和 flock。脚本始终从 `REPO_URL` 获取临时快照；本地 Git 来源只包含已提交的内容，不会自动拉取或修改现有工作区。
+
+脚本逐个镜像源仓库中的应用目录，清理同名目录内已删除的版本和文件，保留其他应用 Key。目标必须是应用商店目录，不能是已安装实例目录。同一目标目录不允许并发同步；失败时返回非零，已完成的应用更新不回滚。
+
+整个应用从源仓库删除时，其目标目录仍会保留，由管理员确认后手动清理：
 
 ```bash
 rm -rf /opt/1panel/resource/apps/local/<app-key>
@@ -374,5 +381,5 @@ rm -rf /opt/1panel/resource/apps/local/<app-key>
 - [ ] 镜像固定版本，不用 `:latest`
 - [ ] 持久化用 `./` 相对路径；需要的目录带 `.gitkeep`
 - [ ] 脚本只在需要时提供，`bash -n` 通过，可执行权限 755
-- [ ] 官方校验脚本通过（可忽略：host 模式的网络误报、description 缺少其他语言）
+- [ ] 本仓库包校验、Shell 语法检查和回归测试通过；CI 与本地使用同一校验入口
 - [ ] 本地商店刷新后能安装、改参数；重启后数据保留；卸载前备份，重装后可恢复数据

@@ -1,29 +1,32 @@
 ## Introduction
 
-Kasm Chrome is a cloud-based desktop Chrome browser running inside Docker. Powered by KasmVNC WebRTC streaming technology, it delivers a near-native 60fps interactive browsing experience directly in any modern web browser.
-
-This package includes full user profile persistence. Extensions, bookmarks, saved credentials, login sessions, and downloaded files remain intact across container restarts and updates.
+Kasm Chrome provides a browser-accessible Chrome desktop through KasmVNC. This package persists the user directory on the host.
 
 ## Features
 
-- **Ultra-low latency streaming**: Smooth typing and scrolling via WebRTC, complete with audio support
-- **Full persistence**: Mounts `/home/kasm-user` to persist bookmarks, extensions, preferences, and downloads
-- **Convenient sidebar utility**: Built-in control panel for two-way clipboard sync and file transfer
-- **Secure isolation**: Runs in an isolated sandbox with password-protected access
+- HTTPS access to the Chrome desktop.
+- Clipboard and file transfer support.
+- Persistent browser settings, bookmarks, extensions, and downloads stored in the user directory.
 
-## Default Ports and Access
+## Access
 
-| Purpose | Host (default) | Container | Protocol |
-|---|---|---|---|
-| Web Access | 6901 | 6901 | HTTPS |
+| Parameter | Default |
+|---|---|
+| Host port | 6901 |
+| Container port | 6901 |
+| Protocol | HTTPS |
+| Username | `kasm_user` |
 
-- Access URL: `https://<SERVER_IP>:6901`
-- Default username: `kasm_user`
-- Password: The password configured in the install form
+Open `https://SERVER_IP:6901` and sign in with the password configured in the installation form. Use the updated address if you change the host port.
 
-> [!NOTE]
-> The container uses a self-signed SSL certificate by default. When prompted by your browser, proceed through the security warning to access the web desktop.
+The image uses a self-signed certificate by default. A reverse proxy can provide a trusted certificate for domain-based access. The initial URL and timezone are configurable in the installation form.
 
-## Data Directory
+## Data directory
 
-`./data` (mapped to `/home/kasm-user`, storing Chrome profiles, preferences, and downloads)
+`./data` maps to `/home/kasm-user` and contains user settings and downloads. The initialization script sets directory ownership. Back up this directory before upgrading or uninstalling.
+
+## Runtime
+
+- Image: `kasmweb/chrome:1.19.0`
+- Architecture: amd64
+- Shared memory limit: 1 GiB

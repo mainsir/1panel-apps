@@ -1,33 +1,47 @@
 #!/bin/bash
-# ==============================================================================
-# 1Panel 本地应用一键同步脚本 (1Panel Community Apps Sync Script)
-#
-# 支持直接在已安装仓库中执行，亦支持通过 curl 一键远程执行：
-#   curl -sSL https://raw.githubusercontent.com/mainsir/1panel-apps/main/scripts/sync-to-1panel.sh | bash
-# ==============================================================================
+# Fetch one repository snapshot and mirror each app package into the local store.
 set -euo pipefail
 
 REPO_URL="${REPO_URL:-https://github.com/mainsir/1panel-apps.git}"
 LOCAL_DIR="${LOCAL_DIR:-/opt/1panel/resource/apps/local}"
 
-mkdir -p "$LOCAL_DIR"
+for cmd in git rsync flock; do
+  command -v "$cmd" >/dev/null || { echo "ERROR: $cmd is required" >&2; exit 1; }
+done
 
-if [ -d "/opt/1panel-apps/.git" ] && [ "${USE_TMP:-0}" != "1" ]; then
-  # 已有长期仓库目录，直接拉取更新并同步
-  echo "[*] 检测到本地已有仓库 /opt/1panel-apps，正在拉取最新代码..."
-  if ! git -C /opt/1panel-apps pull --ff-only; then
-    echo "[ERROR] 拉取失败，请检查网络、当前分支和本地修改后重试。" >&2
+TMP_DIR=$(mktemp -d /tmp/1panel-apps-sync-XXXXXX)
+trap 'rm -rf "$TMP_DIR"' EXIT
+trap 'exit 1' HUP INT TERM
+
+echo "Fetching application packages: $REPO_URL"
+git clone -q --depth 1 -- "$REPO_URL" "$TMP_DIR/repo"
+SOURCE="$TMP_DIR/repo/apps"
+[ -d "$SOURCE" ] && [ ! -L "$SOURCE" ] || { echo "ERROR: apps directory is missing or invalid" >&2; exit 1; }
+shopt -s nullglob
+apps=("$SOURCE"/*)
+[ "${#apps[@]}" -gt 0 ] || { echo "ERROR: no application packages found" >&2; exit 1; }
+
+# Check the complete source before modifying any packages in the destination.
+for app in "${apps[@]}"; do
+  key="${app##*/}"
+  [[ "$key" =~ ^[a-z0-9][a-z0-9-]*$ ]] && [ -d "$app" ] && [ ! -L "$app" ] &&
+    [ -f "$app/data.yml" ] && [ -f "$app/README.md" ] || {
+      echo "ERROR: invalid application package: $key" >&2; exit 1;
+    }
+  if [ -L "$LOCAL_DIR/$key" ] || { [ -e "$LOCAL_DIR/$key" ] && [ ! -d "$LOCAL_DIR/$key" ]; }; then
+    echo "ERROR: destination is not a regular directory: $LOCAL_DIR/$key" >&2
     exit 1
   fi
-  cp -rf /opt/1panel-apps/apps/* "$LOCAL_DIR"/
-else
-  # 临时目录克隆，复制完毕后自动打扫清理
-  TMP_DIR=$(mktemp -d /tmp/1panel-apps-sync-XXXXXX)
-  trap 'rm -rf "$TMP_DIR"' EXIT
-  echo "[*] 正在从 $REPO_URL 拉取最新应用包..."
-  git clone --depth 1 "$REPO_URL" "$TMP_DIR" -q
-  echo "[*] 正在同步应用至 1Panel 本地应用目录: $LOCAL_DIR"
-  cp -rf "$TMP_DIR"/apps/* "$LOCAL_DIR"/
-fi
+done
 
-echo "[OK] 同步成功 ($(date '+%Y-%m-%d %H:%M:%S'))"
+mkdir -p "$LOCAL_DIR"
+exec 9>"$LOCAL_DIR/.1panel-apps-sync.lock"
+flock -n 9 || { echo "ERROR: another synchronization is running" >&2; exit 1; }
+for app in "${apps[@]}"; do
+  key="${app##*/}"
+  echo "Syncing: $key"
+  # Deletions are scoped to this app key. Other local apps remain untouched.
+  rsync -a --delete-delay --delay-updates -- "$app/" "$LOCAL_DIR/$key/"
+done
+
+echo "Application packages synchronized: $LOCAL_DIR"

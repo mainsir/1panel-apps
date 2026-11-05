@@ -1,75 +1,96 @@
-# 1Panel Community Apps Store
+# 1Panel Local App Repository
 
-Curated, high-quality, ready-to-use local app store for 1Panel. Follows official specifications with data persistence and one-command synchronization.
+This repository contains third-party packages for the 1Panel local app store. Application configuration, installation forms, and lifecycle scripts are versioned together.
 
-[简体中文](./README.md) · [Packaging Specification](./1Panel本地应用制作规范.md)
+[简体中文](README.md) · [Packaging specification](1Panel本地应用制作规范.md)
 
----
+## Requirements
 
-## 📖 Overview
+- A Linux host with 1Panel installed.
+- Bash, Git, rsync, and flock (provided by util-linux).
+- Write access to the local app store directory.
 
-This repository provides an open extension library for **[1Panel](https://1panel.cn/)** users. All application packages follow the official 1Panel local app structure and are tailored for VPS and home server deployments with built-in data persistence, proper file permissions, and optimized resource footprints.
-
----
-
-## 🚀 Quick Start
-
-### Option 1: One-Line Automatic Sync (Recommended)
-
-Run the following command directly on your 1Panel server terminal:
+On Debian / Ubuntu:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/mainsir/1panel-apps/main/scripts/sync-to-1panel.sh | bash
+apt-get install -y git rsync util-linux curl
 ```
 
----
+## Synchronization
 
-### Option 2: 1Panel Scheduled Task (Automatic Daily Updates)
+Download and run the synchronization script:
 
-Keep your local store up to date automatically:
+```bash
+curl -fsSL https://raw.githubusercontent.com/mainsir/1panel-apps/main/scripts/sync-to-1panel.sh \
+  -o /tmp/1panel-apps-sync.sh && bash /tmp/1panel-apps-sync.sh
+```
 
-1. In 1Panel web dashboard, go to **Cron** (计划任务) → **Create Task**.
-2. Task Name: `Sync Community Apps`.
-3. Schedule: `Daily` (e.g. `03:00`).
-4. Type: `Shell Script`.
-5. Script Content:
-   ```bash
-   curl -sSL https://raw.githubusercontent.com/mainsir/1panel-apps/main/scripts/sync-to-1panel.sh | bash
-   ```
-6. Save the task.
+Each run fetches the specified repository's default branch. It does not read or update an existing working tree at `/opt/1panel-apps`. A fetch failure stops synchronization.
 
----
+| Variable | Default | Description |
+|---|---|---|
+| `REPO_URL` | `https://github.com/mainsir/1panel-apps.git` | Repository URL or local Git repository path |
+| `LOCAL_DIR` | `/opt/1panel/resource/apps/local` | Local app store directory |
 
-## 🖥️ How to Install Apps in 1Panel (3 Easy Steps)
+To select another source or destination:
 
-1. **Open App Store**: Navigate to **App Store** on the left menu.
-2. **Refresh Catalog**: Click **"Update App List"** (更新应用列表) in the top right corner.
-3. **Install**: Select the **"Local"** (本地) category, find your desired app, and click **Install**.
+```bash
+REPO_URL=https://github.com/example/apps.git \
+LOCAL_DIR=/opt/1panel/resource/apps/local \
+bash /tmp/1panel-apps-sync.sh
+```
 
-Sync updates the installation packages in the local store. Upgrade installed instances separately in 1Panel; changes to a package with the same version do not automatically update an instance. Failed Git pulls stop synchronization; check the network, branch, and local changes before retrying.
+To use a local Git repository:
 
----
+```bash
+REPO_URL=/opt/1panel-apps bash /opt/1panel-apps/scripts/sync-to-1panel.sh
+```
 
-## 📦 Included Applications
+Only committed content is copied from local repositories. `USE_TMP` has been removed; all sources are read through a temporary clone.
 
-| Icon | App Key | App Name | Category | Arch | Highlights |
-|:---:|:---|:---|:---:|:---:|:---|
-| <img src="./apps/3proxy/logo.png" width="40"/> | [3proxy](./apps/3proxy) | **3proxy** | Tool | amd64 / arm64 | Tiny, fast HTTP and SOCKS5 proxy server configured via environment variables |
-| <img src="./apps/gitea-sqlite/logo.png" width="40"/> | [gitea-sqlite](./apps/gitea-sqlite) | **Gitea (SQLite)** | DevOps | amd64 / arm64 | Single-container Gitea with embedded SQLite3; no MySQL needed; runs on 1 vCPU / 1GB RAM |
-| <img src="./apps/kasmweb-chrome/logo.png" width="40"/> | [kasmweb-chrome](./apps/kasmweb-chrome) | **Kasm Chrome** | Tool | amd64 | Web-accessible 60fps Chrome browser powered by KasmVNC WebRTC; audio, clipboard, and profile persistence |
-| <img src="./apps/sing-box-reality/logo.png" width="40"/> | [sing-box-reality](./apps/sing-box-reality) | **VLESS Reality** | Tool | amd64 | Lightweight VLESS Reality inbound service via sing-box; auto secret generation |
+### Scope
 
----
+- Each source app replaces the matching app-key directory, including removal of obsolete versions and files.
+- Other app-key directories are preserved. Different sources should not share an app key.
+- Apps removed entirely from the source are retained in the destination for manual review and removal.
+- Installed instances and their data are not updated. Upgrade instances separately in 1Panel.
+- Concurrent synchronization to the same destination is rejected. A failure returns a nonzero exit status; completed app updates are not rolled back. Resolve the error and rerun the script.
 
-## 🛠️ Contribution & Spec
+Point `LOCAL_DIR` to the app store, not to installed instances. Local changes within matching package directories are overwritten.
 
-Check our packaging guide before creating new packages:
+## Installation and upgrades
 
-👉 **[1Panel Local App Packaging Specification (Guide)](./1Panel本地应用制作规范.md)**
+1. Synchronize the packages and open the 1Panel app store.
+2. Select **Update App List**, then the **Local** category.
+3. Select an application and complete its installation form.
 
----
+Back up existing instances before upgrading through 1Panel. Changing a package without changing its version does not update installed instances; publish a new package version for behavior changes.
 
-## 📄 License
+For scheduled synchronization, create a Shell task in 1Panel and use the download-and-run command above.
 
-Distributed under the [MIT License](LICENSE).
-Upstream container images belong to their respective authors and maintainers.
+## Applications
+
+| Application | Architectures | Description |
+|---|---|---|
+| [3proxy](apps/3proxy) | amd64, arm64, arm/v7 | HTTP and SOCKS5 proxy with username/password authentication |
+| [Gitea SQLite](apps/gitea-sqlite) | amd64, arm64 | Single-container Git hosting with SQLite |
+| [Kasm Chrome](apps/kasmweb-chrome) | amd64 | Browser-accessible Chrome desktop with a persistent user directory |
+| [VLESS Reality](apps/sing-box-reality) | amd64 | VLESS Reality inbound service based on sing-box |
+
+## Validation
+
+Local development and CI use the same validation entry point:
+
+```bash
+python3 -m pip install pyyaml pillow
+python3 scripts/validate-apps.py
+python3 -m unittest discover -s tests -v
+```
+
+Tests use temporary directories and do not synchronize the live app store. Set `SING_BOX_BINARY` to the sing-box executable matching the image version to validate real configuration and IPv4/IPv6 TCP listeners. These two checks are skipped when no binary is available. Installation and upgrade behavior still require testing in 1Panel.
+
+See the [packaging specification](1Panel本地应用制作规范.md) before adding an application.
+
+## License
+
+This repository is distributed under the [MIT License](LICENSE). Upstream software and container images retain their respective licenses.

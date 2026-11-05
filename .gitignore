@@ -19,3 +19,7 @@ Desktop.ini
 # Session / temp
 .grok/
 *.log
+
+# Python test cache
+__pycache__/
+*.py[cod]

@@ -11,8 +11,8 @@ additionalProperties:
   shortDescZh: 轻量 Git 代码托管，SQLite 单容器，无需 MySQL
   shortDescEn: Lightweight Git hosting, single container with SQLite, no MySQL needed
   description:
-    zh: Gitea 轻量代码托管平台 SQLite 单容器版本，无需安装 MySQL，1C1G 小内存服务器也能流畅运行，个人开发者自建首选
-    en: Lightweight Gitea code hosting in a single container with SQLite. No MySQL required, runs smoothly even on 1C1G servers.
+    zh: 使用 SQLite 的单容器 Gitea，提供 Git 仓库托管、代码审查和项目协作功能。
+    en: Single-container Gitea with SQLite for Git hosting, code review, and collaboration.
   type: tool
   crossVersionUpdate: true
   limit: 0
