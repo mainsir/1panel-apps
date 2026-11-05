@@ -1,0 +1,36 @@
+# Bridge publish. Host mode is swapped in from scripts/docker-compose.host.yml
+# when NETWORK_MODE=host (scripts/apply-network.sh, install and upgrade).
+services:
+  sing-box-socks5:
+    image: ghcr.io/sagernet/sing-box:v1.13.21
+    container_name: ${CONTAINER_NAME}
+    restart: always
+    networks:
+      - 1panel-network
+    ports:
+      - ${PANEL_APP_PORT_SOCKS}:${PANEL_APP_PORT_SOCKS}/tcp
+      - ${PANEL_APP_PORT_SOCKS}:${PANEL_APP_PORT_SOCKS}/udp
+    working_dir: /data
+    volumes:
+      - ./data:/data
+      - ./.env:/run/panel.env:ro
+      - ./scripts/entrypoint.sh:/entrypoint.sh:ro
+    environment:
+      TZ: ${TZ}
+      PANEL_APP_PORT_SOCKS: ${PANEL_APP_PORT_SOCKS}
+      PROXY_USERNAME: ${PROXY_USERNAME}
+      PROXY_PASSWORD: ${PROXY_PASSWORD}
+      LOG_LEVEL: ${LOG_LEVEL}
+      INBOUND_TYPE: ${INBOUND_TYPE}
+      NETWORK_MODE: ${NETWORK_MODE}
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    labels:
+      createdBy: "Apps"
+
+networks:
+  1panel-network:
+    external: true

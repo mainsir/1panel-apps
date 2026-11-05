@@ -1,0 +1,58 @@
+additionalProperties:
+  formFields:
+    - default: 18443
+      edit: true
+      envKey: PANEL_APP_PORT_TCP
+      labelZh: 本机监听端口
+      labelEn: Local listen port
+      required: true
+      rule: paramPort
+      type: number
+
+    - default: ""
+      edit: true
+      envKey: PUBLIC_HOST
+      labelZh: 客户端域名
+      labelEn: Client domain
+      required: true
+      type: text
+
+    - default: /cdn-cgi/assets/v7kQm2pLx9nR
+      edit: true
+      envKey: WS_PATH
+      labelZh: WebSocket 路径
+      labelEn: WebSocket path
+      required: true
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_HOST
+      labelZh: SOCKS5 落地地址（留空=直连）
+      labelEn: SOCKS5 egress host (empty=direct)
+      required: false
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_PORT
+      labelZh: SOCKS5 落地端口（留空=直连）
+      labelEn: SOCKS5 egress port (empty=direct)
+      required: false
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_USER
+      labelZh: SOCKS5 账号（可选）
+      labelEn: SOCKS5 username (optional)
+      required: false
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_PASS
+      labelZh: SOCKS5 密码（可选）
+      labelEn: SOCKS5 password (optional)
+      required: false
+      type: password

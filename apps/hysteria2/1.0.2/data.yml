@@ -1,0 +1,77 @@
+additionalProperties:
+  formFields:
+    # UDP only. The key must not contain PANEL_APP_PORT: 1Panel install
+    # conflict-checks every such param with a TCP listen plus the reserved
+    # HTTP/HTTPS ports, which rejects UDP 443 while OpenResty holds TCP 443.
+    - default: 443
+      edit: true
+      envKey: HY2_UDP_PORT
+      labelZh: UDP 监听端口（建议 443）
+      labelEn: UDP listen port (prefer 443)
+      required: true
+      rule: paramPort
+      type: number
+
+    - default: ""
+      edit: true
+      envKey: PUBLIC_HOST
+      labelZh: 域名（SNI / 分享链接）
+      labelEn: Domain (SNI / share link)
+      required: true
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: PASSWORD
+      labelZh: 认证密码（留空自动生成）
+      labelEn: Auth password (empty = auto)
+      required: false
+      type: password
+
+    - default: /opt/1panel/www/sites/your.domain/ssl
+      edit: true
+      envKey: CERT_DIR
+      labelZh: 证书目录（宿主机，含 fullchain/privkey）
+      labelEn: Host cert directory (fullchain + privkey)
+      required: true
+      type: text
+
+    - default: https://www.microsoft.com
+      edit: true
+      envKey: MASQUERADE_URL
+      labelZh: 伪装反代目标（可改）
+      labelEn: Masquerade proxy URL
+      required: false
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_HOST
+      labelZh: 【高级】SOCKS5 落地地址（留空=直连）
+      labelEn: "[Advanced] SOCKS5 egress host (empty=direct)"
+      required: false
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_PORT
+      labelZh: 【高级】SOCKS5 落地端口（留空=直连）
+      labelEn: "[Advanced] SOCKS5 egress port (empty=direct)"
+      required: false
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_USER
+      labelZh: 【高级】SOCKS5 账号（可选）
+      labelEn: "[Advanced] SOCKS5 username (optional)"
+      required: false
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_PASS
+      labelZh: 【高级】SOCKS5 密码（可选）
+      labelEn: "[Advanced] SOCKS5 password (optional)"
+      required: false
+      type: password

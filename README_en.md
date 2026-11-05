@@ -72,10 +72,11 @@ For scheduled synchronization, create a Shell task in 1Panel and use the downloa
 
 | Application | Architectures | Description |
 |---|---|---|
-| [3proxy](apps/3proxy) | amd64, arm64, arm/v7 | HTTP and SOCKS5 proxy with username/password authentication |
+| [sing-box SOCKS5](apps/sing-box-socks5) | amd64, arm64, arm/v7 | SOCKS5 proxy with optional HTTP on the same port |
 | [Gitea SQLite](apps/gitea-sqlite) | amd64, arm64 | Single-container Git hosting with SQLite |
 | [Kasm Chrome](apps/kasmweb-chrome) | amd64 | Browser-accessible Chrome desktop with a persistent user directory |
-| [VLESS Reality](apps/sing-box-reality) | amd64 | VLESS Reality inbound service based on sing-box |
+| [VLESS WS TLS](apps/sing-box-reality) | amd64 | VLESS WebSocket inbound with TLS at the reverse proxy |
+| [Hysteria2](apps/hysteria2) | amd64, arm64 | QUIC / UDP proxy service |
 
 ## Validation
 
@@ -87,7 +88,7 @@ python3 scripts/validate-apps.py
 python3 -m unittest discover -s tests -v
 ```
 
-Tests use temporary directories and do not synchronize the live app store. Set `SING_BOX_BINARY` to the sing-box executable matching the image version to validate real configuration and IPv4/IPv6 TCP listeners. These two checks are skipped when no binary is available. Installation and upgrade behavior still require testing in 1Panel.
+Tests use temporary directories and do not synchronize the live app store. Set `SING_BOX_BINARY` to the sing-box executable matching the image version to validate real configuration and IPv4/IPv6 TCP listeners. Real-binary checks are skipped when no binary is available. Installation and upgrade behavior still require testing in 1Panel.
 
 See the [packaging specification](1Panel本地应用制作规范.md) before adding an application.
 

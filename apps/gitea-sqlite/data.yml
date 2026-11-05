@@ -13,7 +13,7 @@ additionalProperties:
   description:
     zh: 使用 SQLite 的单容器 Gitea，提供 Git 仓库托管、代码审查和项目协作功能。
     en: Single-container Gitea with SQLite for Git hosting, code review, and collaboration.
-  type: tool
+  type: website
   crossVersionUpdate: true
   limit: 0
   recommend: 0

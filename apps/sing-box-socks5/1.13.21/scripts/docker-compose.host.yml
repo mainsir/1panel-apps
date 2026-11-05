@@ -1,0 +1,28 @@
+# Selected at install or upgrade when NETWORK_MODE=host.
+# No ports and no 1panel-network: sing-box listens on the host port directly.
+services:
+  sing-box-socks5:
+    image: ghcr.io/sagernet/sing-box:v1.13.21
+    container_name: ${CONTAINER_NAME}
+    restart: always
+    network_mode: host
+    working_dir: /data
+    volumes:
+      - ./data:/data
+      - ./.env:/run/panel.env:ro
+      - ./scripts/entrypoint.sh:/entrypoint.sh:ro
+    environment:
+      TZ: ${TZ}
+      PANEL_APP_PORT_SOCKS: ${PANEL_APP_PORT_SOCKS}
+      PROXY_USERNAME: ${PROXY_USERNAME}
+      PROXY_PASSWORD: ${PROXY_PASSWORD}
+      LOG_LEVEL: ${LOG_LEVEL}
+      INBOUND_TYPE: ${INBOUND_TYPE}
+      NETWORK_MODE: ${NETWORK_MODE}
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    labels:
+      createdBy: "Apps"

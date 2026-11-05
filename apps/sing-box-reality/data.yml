@@ -1,16 +1,16 @@
-name: VLESS Reality
+name: VLESS WS TLS
 tags:
   - Tool
-title: VLESS Reality
-description: VLESS Reality inbound based on sing-box
+title: VLESS WS TLS
+description: VLESS WebSocket inbound with reverse-proxy TLS, based on sing-box
 
 additionalProperties:
   key: sing-box-reality
-  name: VLESS Reality
+  name: VLESS WS TLS
   tags:
     - Tool
-  shortDescZh: 基于 sing-box 的 VLESS Reality 入站服务
-  shortDescEn: VLESS Reality inbound service based on sing-box
+  shortDescZh: VLESS WebSocket 前置反代 TLS
+  shortDescEn: VLESS WebSocket behind reverse-proxy TLS
   type: tool
   crossVersionUpdate: true
   limit: 1
@@ -19,7 +19,7 @@ additionalProperties:
   github: https://github.com/SagerNet/sing-box
   document: https://sing-box.sagernet.org/configuration/
   description:
-    en: Provides a VLESS inbound with Reality TLS via sing-box for Docker and 1Panel deployment
-    zh: 基于 sing-box 提供 VLESS 协议与 Reality TLS 入站能力，适用于 Docker / 1Panel 部署
+    en: VLESS WebSocket inbound based on sing-box. TLS is terminated by a front OpenResty or nginx reverse proxy for Docker and 1Panel deployment.
+    zh: 基于 sing-box 的 VLESS WebSocket（前置反代 TLS）。证书在 OpenResty 或 nginx 上终止，适用于 Docker / 1Panel 部署
   architectures:
     - amd64

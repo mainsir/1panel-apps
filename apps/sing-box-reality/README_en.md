@@ -1,42 +1,78 @@
 ## Introduction
 
-This package provides a VLESS over TCP inbound using sing-box, Reality TLS, and `xtls-rprx-vision`. It supports IPv4, IPv6, and an optional SOCKS5 outbound proxy.
+This application deploys a **VLESS + WebSocket** inbound based on [sing-box](https://sing-box.sagernet.org/). TLS terminates at a front OpenResty or nginx reverse proxy. sing-box listens on localhost only, and its configuration has no Reality block.
+
+Use it when the host already has a website certificate (Let's Encrypt). Proxy one hidden WebSocket path to the local port. Clients connect to the domain on port 443 and do not connect to sing-box directly.
+
+## Features
+
+- Protocol: VLESS over WebSocket, UUID only, no Vision flow
+- Configurable WebSocket path, 2048-byte early data, header `Sec-WebSocket-Protocol`
+- No TLS or Reality inside sing-box; the reverse proxy presents the certificate
+- Generates a UUID on first start and stores it in `keys.env`; later restarts reuse it
+- Rewrites `config.json` from the form on every start and writes an importable link to `client.txt`
+- Optional egress: when Socks5 is set, inbound traffic leaves through that proxy; otherwise direct
+- Host networking, always listening on `127.0.0.1`, so OpenResty on the same machine can reach it; architecture: amd64
+- From **1.0.3**, the install form has no timezone, listen address, or link name. The container keeps the image timezone; the inbound is fixed at `127.0.0.1`; the share-link remark is fixed as `SingBox-WS`
 
 ## Defaults
 
-| Parameter | Default | Description |
+| Item | Value | Description |
 |---|---|---|
-| Listen port | 38443 | Listens directly on the host using host networking |
-| SNI | www.nvidia.com | Reality handshake target on port 443 |
-| Client fingerprint | chrome | Included in the client link |
-| Outbound proxy | Empty | Connects directly to destination servers |
+| Local listen port | 18443 | For the reverse proxy only; clients do not use this port |
+| Listen address | 127.0.0.1 | Fixed loopback; not a form field |
+| WebSocket path | `/cdn-cgi/assets/v7kQm2pLx9nR` | Change this to your own hidden path |
+| Client domain | Set at install | Used for the share link, SNI, and Host |
+| Link name | SingBox-WS | Fixed in the share link; not a form field |
+| Fingerprint | chrome | Written into the share link |
+| SOCKS5 egress | Empty (direct) | Empty host and port mean direct; username and password are optional |
 
 ## Usage
 
-1. Set the listen port, SNI, and public address in the installation form. Enter an IP address or domain without a scheme, port, or path.
-2. Read `client.txt` in the data directory for client settings and the share link. If the public address is empty, replace `<服务器IP>` in the link manually.
-3. IPv6 addresses are enclosed in brackets automatically. IPv6 access requires a reachable host IPv6 address and an allowed firewall port.
-4. Provide both SOCKS5 host and port when configuring an outbound proxy. Provide both username and password when authentication is required.
-5. Parameter changes regenerate the runtime configuration on container startup without replacing existing node credentials.
+1. Enter a domain that already points at this machine and already has a certificate on OpenResty or nginx.
+2. Add the WebSocket location below to that site. The location must match the WebSocket path, and the `proxy_pass` port must match the local listen port.
+3. After startup, open `client.txt` in the data directory and import the node link. The client address is **domain:443**.
+4. Upgrading from 1.0.1 (Reality) keeps the UUID in `keys.env` and stops using Reality keys. After the reverse proxy is in place, import the new `client.txt`. Old Reality links no longer work.
 
-## Credentials and upgrades
+Back up the app in 1Panel, or save the `data` directory, before uninstalling. Uninstalling may remove the instance directory. A new install generates a new UUID and invalidates old links.
 
-On first startup, the package generates a UUID, Reality keypair, and short ID, then saves `keys.env` after validating the configuration. Existing credentials are read without rewriting the file. Missing or malformed fields stop startup; the package does not automatically replace the node identity. Restore a valid backup to recover.
+### OpenResty / nginx
 
-Package version `1.0.2` fixes credential publication and IPv6 listening. The image remains at `v1.13.14`. Back up `data` before upgrading an existing instance through 1Panel. Valid credentials from earlier packages are preserved.
+TLS terminates on the site's port 443 with the existing Let's Encrypt certificate. The example uses the default path and port. If you change the form, use those values instead.
 
-Uninstalling may delete the instance directory. Restore the original `keys.env` before starting a reinstalled instance to retain existing client settings.
+OpenResty must be able to reach `127.0.0.1` on the host (this is true when 1Panel OpenResty uses host networking). Do not expose the local listen port to the public internet.
 
-## Data directory
+```nginx
+location = /cdn-cgi/assets/v7kQm2pLx9nR {
+    proxy_pass http://127.0.0.1:18443;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_read_timeout 300s;
+}
+```
 
-| Path | Contents |
+### Egress proxy
+
+To change the egress address, set the SOCKS5 host and port together. Leave both empty for a direct outbound. When the proxy requires authentication, set both username and password. Ports must be from 1 to 65535. A partial setting makes the container refuse to start.
+
+## Credentials and package upgrades
+
+Version `1.0.4` retains the WebSocket transport, simplified form, and loopback listener from `1.0.3`, and fixes UUID persistence. Existing `keys.env` files are read without rewriting; a missing or invalid UUID prevents startup. New credentials are published atomically, and runtime configuration is replaced only after validation.
+
+Back up `data` and select `1.0.4` in 1Panel to upgrade. Migration from the legacy Reality package preserves the UUID and original credential file; clients must still switch to WebSocket as described below. The front OpenResty or nginx provides public IPv4/IPv6 access; the backend remains on `127.0.0.1`.
+
+## Data
+
+| Path | Description |
 |---|---|
-| `./data/keys.env` | UUID, Reality keypair, and short ID |
-| `./data/config.json` | Validated runtime configuration |
-| `./data/client.txt` | Client settings and share link |
+| `./data/keys.env` | UUID (persisted automatically) |
+| `./data/config.json` | sing-box runtime config |
+| `./data/client.txt` | Node link and client parameters |
 
-## Runtime
+## Image
 
-- Image: `ghcr.io/sagernet/sing-box:v1.13.14`
-- Architecture: amd64
-- Network: host; listens on `::` for IPv4/IPv6 TCP connections
+`ghcr.io/sagernet/sing-box:v1.13.14`

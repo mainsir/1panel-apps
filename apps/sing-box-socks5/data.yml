@@ -1,0 +1,27 @@
+name: sing-box SOCKS5
+tags:
+  - Tool
+title: sing-box SOCKS5
+description: Event-driven SOCKS5 proxy based on sing-box
+
+additionalProperties:
+  key: sing-box-socks5
+  name: sing-box SOCKS5
+  tags:
+    - Tool
+  shortDescZh: 基于 sing-box 的轻量 SOCKS5 代理
+  shortDescEn: Lightweight SOCKS5 proxy based on sing-box
+  type: tool
+  crossVersionUpdate: true
+  limit: 0
+  recommend: 0
+  website: https://sing-box.sagernet.org/
+  github: https://github.com/SagerNet/sing-box
+  document: https://sing-box.sagernet.org/configuration/inbound/socks/
+  description:
+    en: Event-driven SOCKS5 proxy based on sing-box, with optional HTTP on the same port
+    zh: 基于 sing-box 的事件驱动 SOCKS5 代理，可选在同一端口提供 HTTP 代理
+  architectures:
+    - amd64
+    - arm64
+    - arm/v7

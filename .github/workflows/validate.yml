@@ -41,7 +41,8 @@ jobs:
           version=$(python - <<'PY'
           from pathlib import Path
           import yaml
-          compose = next(Path('apps/sing-box-reality').glob('*/docker-compose.yml'))
+          compose = max(Path('apps/sing-box-reality').glob('*/docker-compose.yml'),
+                        key=lambda path: tuple(map(int, path.parent.name.split('.'))))
           image = yaml.safe_load(compose.read_text())['services']['sing-box-reality']['image']
           print(image.rsplit(':', 1)[1].removeprefix('v'))
           PY

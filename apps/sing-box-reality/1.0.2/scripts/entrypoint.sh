@@ -1,5 +1,6 @@
 #!/bin/sh
 # Generate configuration on every start so 1Panel parameter changes take effect.
+# TLS is terminated by the front reverse proxy. sing-box only serves VLESS over WebSocket.
 set -eu
 umask 077
 
@@ -7,6 +8,7 @@ DATA_DIR="${DATA_DIR:-/data}"
 KEYS_FILE="$DATA_DIR/keys.env"
 CONFIG_FILE="$DATA_DIR/config.json"
 CLIENT_FILE="$DATA_DIR/client.txt"
+DEFAULT_WS_PATH='/cdn-cgi/assets/v7kQm2pLx9nR'
 
 fail() {
   echo "ERROR: $*" >&2
@@ -52,10 +54,104 @@ url_encode() {
     } }'
 }
 
-PORT=$(port_number "${PANEL_APP_PORT_TCP:-38443}" PANEL_APP_PORT_TCP)
-SNI=$(trim "${REALITY_SNI:-www.nvidia.com}")
+has_controls() {
+  printf '%s' "$1" | od -An -v -tu1 | LC_ALL=C awk '
+    { for (i = 1; i <= NF; i++) if (($i + 0) < 32 || ($i + 0) == 127) found = 1 }
+    END { exit found ? 0 : 1 }'
+}
+
+valid_uuid() {
+  case "$1" in
+    [0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]-[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]-[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]-[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]-[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F])
+      return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# An address may be a hostname or an IPv6 literal. A single colon is host:port.
+require_host() {
+  value=$1
+  label=$2
+  case "$value" in
+    ''|.*|*.|-*|*-|*[!A-Za-z0-9._:-]*) fail "$label must be a domain or IP address" ;;
+  esac
+  case "$value" in
+    *:*)
+      case "$value" in
+        *[!0-9A-Fa-f:]*) fail "$label must be a domain or IP address" ;;
+        *:*:*) ;;
+        *) fail "$label must not include a port" ;;
+      esac
+      ;;
+  esac
+}
+
+# Compose expands $ in interpolated values. Read text fields from the mounted
+# 1Panel .env so a value containing $ is the literal saved by the panel.
+load_panel_value() {
+  _panel=''
+  file=${PANEL_ENV_FILE:-/run/panel.env}
+  [ -f "$file" ] || return 1
+  line=$(grep -E "^$1=" "$file" | tail -n 1 | tr -d '\r' || true)
+  [ -n "$line" ] || return 1
+  _panel=${line#*=}
+  case "$_panel" in
+    \"*\") _panel=${_panel#\"}; _panel=${_panel%\"} ;;
+    \'*\') _panel=${_panel#\'}; _panel=${_panel%\'} ;;
+  esac
+  return 0
+}
+
+if load_panel_value LISTEN_HOST; then LISTEN_HOST="$_panel"; fi
+if load_panel_value PUBLIC_HOST; then PUBLIC_HOST="$_panel"; fi
+if load_panel_value WS_PATH; then WS_PATH="$_panel"; fi
+if load_panel_value LINK_NAME; then LINK_NAME="$_panel"; fi
+if load_panel_value SOCKS5_HOST; then SOCKS5_HOST="$_panel"; fi
+if load_panel_value SOCKS5_USER; then SOCKS5_USER="$_panel"; fi
+if load_panel_value SOCKS5_PASS; then SOCKS5_PASS="$_panel"; fi
+
+PORT=$(port_number "${PANEL_APP_PORT_TCP:-18443}" PANEL_APP_PORT_TCP)
+LISTEN_HOST=$(trim "${LISTEN_HOST:-127.0.0.1}")
+[ -n "$LISTEN_HOST" ] || LISTEN_HOST=127.0.0.1
+case "$LISTEN_HOST" in
+  \[*\]) LISTEN_HOST=${LISTEN_HOST#[}; LISTEN_HOST=${LISTEN_HOST%]} ;;
+esac
+require_host "$LISTEN_HOST" LISTEN_HOST
+
 PUBLIC_HOST=$(trim "${PUBLIC_HOST:-}")
-LINK_NAME="${LINK_NAME:-SingBox-Reality}"
+[ -n "$PUBLIC_HOST" ] || fail "PUBLIC_HOST is required"
+case "$PUBLIC_HOST" in
+  \[*\]) PUBLIC_HOST=${PUBLIC_HOST#[}; PUBLIC_HOST=${PUBLIC_HOST%]} ;;
+esac
+require_host "$PUBLIC_HOST" PUBLIC_HOST
+case "$PUBLIC_HOST" in
+  *:*) LINK_HOST="[$PUBLIC_HOST]" ;;
+  *) LINK_HOST=$PUBLIC_HOST ;;
+esac
+
+# Reject control characters before trim: trim deletes CR/LF anywhere in the value.
+if [ -z "${WS_PATH:-}" ]; then
+  WS_PATH=$DEFAULT_WS_PATH
+fi
+if has_controls "$WS_PATH"; then
+  fail "WS_PATH contains control characters"
+fi
+WS_PATH=$(trim "$WS_PATH")
+[ -n "$WS_PATH" ] || WS_PATH=$DEFAULT_WS_PATH
+case "$WS_PATH" in
+  /*) ;;
+  *) WS_PATH="/$WS_PATH" ;;
+esac
+
+if [ -z "${LINK_NAME:-}" ]; then
+  LINK_NAME=SingBox-WS
+fi
+if has_controls "$LINK_NAME"; then
+  fail "LINK_NAME contains control characters"
+fi
+LINK_NAME=$(trim "$LINK_NAME")
+[ -n "$LINK_NAME" ] || LINK_NAME=SingBox-WS
+
 SOCKS5_HOST=$(trim "${SOCKS5_HOST:-}")
 SOCKS5_PORT=$(trim "${SOCKS5_PORT:-}")
 # Do not trim credentials: whitespace can be part of an upstream password.
@@ -65,6 +161,7 @@ SOCKS5_PASS="${SOCKS5_PASS:-}"
 if [ -n "$SOCKS5_HOST" ] || [ -n "$SOCKS5_PORT" ]; then
   [ -n "$SOCKS5_HOST" ] && [ -n "$SOCKS5_PORT" ] ||
     fail "SOCKS5_HOST and SOCKS5_PORT must both be set"
+  require_host "$SOCKS5_HOST" SOCKS5_HOST
   SOCKS5_PORT=$(port_number "$SOCKS5_PORT" SOCKS5_PORT)
 fi
 if [ -n "$SOCKS5_USER" ] || [ -n "$SOCKS5_PASS" ]; then
@@ -75,46 +172,26 @@ fi
 
 mkdir -p "$DATA_DIR"
 SB_UUID=''
-PRIVATE_KEY=''
-PUBLIC_KEY=''
-SHORT_ID=''
-NEW_KEYS=0
-if [ -e "$KEYS_FILE" ]; then
-  [ -f "$KEYS_FILE" ] && [ -r "$KEYS_FILE" ] || fail "keys.env is not a readable file"
-  # Parse data only. Missing or invalid persisted secrets must not rotate identity.
-  while IFS='=' read -r key value || [ -n "$key" ]; do
-    value=$(printf '%s' "$value" | tr -d '\r')
-    case "$key" in
-      SB_UUID) [ -z "$SB_UUID" ] || fail "duplicate SB_UUID"; SB_UUID="$value" ;;
-      PRIVATE_KEY) [ -z "$PRIVATE_KEY" ] || fail "duplicate PRIVATE_KEY"; PRIVATE_KEY="$value" ;;
-      PUBLIC_KEY) [ -z "$PUBLIC_KEY" ] || fail "duplicate PUBLIC_KEY"; PUBLIC_KEY="$value" ;;
-      SHORT_ID) [ -z "$SHORT_ID" ] || fail "duplicate SHORT_ID"; SHORT_ID="$value" ;;
-      '') [ -z "$value" ] || fail "invalid keys.env line" ;;
-      *) fail "invalid keys.env field: $key" ;;
+if [ -f "$KEYS_FILE" ]; then
+  # Read the persisted UUID as data. Do not execute the file.
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in
+      SB_UUID=*) SB_UUID=${line#SB_UUID=} ;;
     esac
   done < "$KEYS_FILE"
-else
-  [ ! -L "$KEYS_FILE" ] || fail "keys.env is a broken symlink"
-  NEW_KEYS=1
-  SB_UUID=$(sing-box generate uuid)
-  KP=$(sing-box generate reality-keypair)
-  PRIVATE_KEY=$(printf '%s\n' "$KP" | sed -n 's/^PrivateKey:[[:space:]]*//p')
-  PUBLIC_KEY=$(printf '%s\n' "$KP" | sed -n 's/^PublicKey:[[:space:]]*//p')
-  SHORT_ID=$(sing-box generate rand 4 --hex)
 fi
+SB_UUID=$(trim "$SB_UUID")
+if [ -z "$SB_UUID" ]; then
+  SB_UUID=$(trim "$(sing-box generate uuid)")
+elif ! valid_uuid "$SB_UUID"; then
+  fail "SB_UUID in keys.env is invalid"
+fi
+valid_uuid "$SB_UUID" || fail "failed to generate UUID"
 
-printf '%s\n' "$SB_UUID" | grep -Eq '^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$' ||
-  fail "invalid UUID in keys.env; restore a valid backup"
-for value in "$PRIVATE_KEY" "$PUBLIC_KEY"; do
-  printf '%s\n' "$value" | grep -Eq '^[A-Za-z0-9_-]{43}$' ||
-    fail "invalid Reality key in keys.env; restore a valid backup"
-done
-printf '%s\n' "$SHORT_ID" | grep -Eq '^([0-9a-fA-F]{2}){1,8}$' ||
-  fail "invalid short ID in keys.env; restore a valid backup"
-
-WORK_DIR=$(mktemp -d "$DATA_DIR/.startup-XXXXXX")
-trap 'rm -rf "$WORK_DIR"' EXIT
-trap 'exit 1' HUP INT TERM
+cat > "$KEYS_FILE" <<KEYS
+SB_UUID=$SB_UUID
+KEYS
+chmod 600 "$KEYS_FILE"
 
 if [ -n "$SOCKS5_HOST" ]; then
   AUTH_FIELDS=''
@@ -128,70 +205,50 @@ else
   OUTBOUND_DESC=direct
 fi
 
-cat > "$WORK_DIR/config.json" <<CONFIG
+cat > "$CONFIG_FILE" <<CONFIG
 {
   "log": {"level": "info", "timestamp": true},
   "inbounds": [{
     "type": "vless",
-    "tag": "vless-in",
-    "listen": "::",
+    "tag": "vless-ws-in",
+    "listen": $(json_string "$LISTEN_HOST"),
     "listen_port": $PORT,
-    "users": [{"uuid": $(json_string "$SB_UUID"), "flow": "xtls-rprx-vision"}],
-    "tls": {
-      "enabled": true,
-      "server_name": $(json_string "$SNI"),
-      "reality": {
-        "enabled": true,
-        "handshake": {"server": $(json_string "$SNI"), "server_port": 443},
-        "private_key": $(json_string "$PRIVATE_KEY"),
-        "short_id": [$(json_string "$SHORT_ID")]
-      }
+    "users": [{"uuid": $(json_string "$SB_UUID")}],
+    "transport": {
+      "type": "ws",
+      "path": $(json_string "$WS_PATH"),
+      "max_early_data": 2048,
+      "early_data_header_name": $(json_string "Sec-WebSocket-Protocol")
     }
   }],
   "outbounds": [$OUTBOUND]
 }
 CONFIG
-sing-box check -c "$WORK_DIR/config.json"
+chmod 600 "$CONFIG_FILE"
+sing-box check -c "$CONFIG_FILE"
 
-PUBLIC_HOST="${PUBLIC_HOST:-<服务器IP>}"
-case "$PUBLIC_HOST" in
-  \[*\]) LINK_HOST="$PUBLIC_HOST" ;;
-  *:*) LINK_HOST="[$PUBLIC_HOST]" ;;
-  *) LINK_HOST="$PUBLIC_HOST" ;;
-esac
-SHARE_LINK="vless://$SB_UUID@$LINK_HOST:$PORT?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$(url_encode "$SNI")&fp=chrome&pbk=$(url_encode "$PUBLIC_KEY")&sid=$(url_encode "$SHORT_ID")&type=tcp#$(url_encode "$LINK_NAME")"
+ENC_PATH=$(url_encode "$WS_PATH")
+ENC_NAME=$(url_encode "$LINK_NAME")
+SHARE_LINK="vless://${SB_UUID}@${LINK_HOST}:443?encryption=none&security=tls&sni=${PUBLIC_HOST}&fp=chrome&type=ws&host=${PUBLIC_HOST}&path=${ENC_PATH}&ed=2048&eh=Sec-WebSocket-Protocol#${ENC_NAME}"
 
-cat > "$WORK_DIR/client.txt" <<CLIENT
-========== VLESS Reality ==========
-地址:   $PUBLIC_HOST
-端口:   $PORT
-UUID:   $SB_UUID
-Flow:   xtls-rprx-vision
-SNI:    $SNI
-握手:   $SNI:443
-公钥:   $PUBLIC_KEY
-sid:    $SHORT_ID
-指纹:   chrome
+cat > "$CLIENT_FILE" <<CLIENT
+========== VLESS + WS + TLS ==========
+地址:     $PUBLIC_HOST
+端口:     443
+UUID:     $SB_UUID
+传输:     WebSocket
+路径:     $WS_PATH
+TLS:      tls (OpenResty / Let's Encrypt)
+SNI/Host: $PUBLIC_HOST
+指纹:     chrome
+本机入站: $LISTEN_HOST:$PORT
+出口:     $OUTBOUND_DESC
 
 节点链接:
 $SHARE_LINK
-===================================
+======================================
 CLIENT
-if [ "$NEW_KEYS" = 1 ]; then
-  cat > "$WORK_DIR/keys.env" <<KEYS
-SB_UUID=$SB_UUID
-PRIVATE_KEY=$PRIVATE_KEY
-PUBLIC_KEY=$PUBLIC_KEY
-SHORT_ID=$SHORT_ID
-KEYS
-  # Publish a complete file without replacing credentials from a concurrent start.
-  ln "$WORK_DIR/keys.env" "$KEYS_FILE"
-fi
-chmod 600 "$KEYS_FILE"
-mv -f "$WORK_DIR/config.json" "$CONFIG_FILE"
-mv -f "$WORK_DIR/client.txt" "$CLIENT_FILE"
-rm -rf "$WORK_DIR"
-trap - EXIT HUP INT TERM
-echo "OK port=$PORT sni=$SNI outbound=$OUTBOUND_DESC"
+chmod 600 "$CLIENT_FILE"
+echo "OK ws ${LISTEN_HOST}:${PORT}${WS_PATH} public=${PUBLIC_HOST}:443 outbound=${OUTBOUND_DESC}"
 echo "client info: $CLIENT_FILE"
 exec sing-box run -c "$CONFIG_FILE"

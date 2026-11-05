@@ -1,31 +1,39 @@
 additionalProperties:
   formFields:
-    - default: 38443
+    - default: 18443
       edit: true
       envKey: PANEL_APP_PORT_TCP
-      labelZh: Reality 监听端口
-      labelEn: Reality listen port
+      labelZh: 本机监听端口
+      labelEn: Local listen port
       required: true
       rule: paramPort
       type: number
 
-    - default: www.nvidia.com
+    - default: 127.0.0.1
       edit: true
-      envKey: REALITY_SNI
-      labelZh: 伪装域名 (SNI)
-      labelEn: Camouflage SNI
+      envKey: LISTEN_HOST
+      labelZh: 监听地址
+      labelEn: Listen address
       required: true
       type: text
 
     - default: ""
       edit: true
       envKey: PUBLIC_HOST
-      labelZh: 客户端连接地址(IP或域名)
-      labelEn: Public host for client links
-      required: false
+      labelZh: 客户端域名
+      labelEn: Client domain
+      required: true
       type: text
 
-    - default: SingBox-Reality
+    - default: /cdn-cgi/assets/v7kQm2pLx9nR
+      edit: true
+      envKey: WS_PATH
+      labelZh: WebSocket 路径
+      labelEn: WebSocket path
+      required: true
+      type: text
+
+    - default: SingBox-WS
       edit: true
       envKey: LINK_NAME
       labelZh: 节点链接备注名

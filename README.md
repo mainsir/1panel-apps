@@ -72,10 +72,11 @@ REPO_URL=/opt/1panel-apps bash /opt/1panel-apps/scripts/sync-to-1panel.sh
 
 | 应用 | 架构 | 说明 |
 |---|---|---|
-| [3proxy](apps/3proxy) | amd64、arm64、arm/v7 | HTTP 和 SOCKS5 代理，支持账号密码认证 |
+| [sing-box SOCKS5](apps/sing-box-socks5) | amd64、arm64、arm/v7 | SOCKS5 代理，可选同端口 HTTP |
 | [Gitea SQLite](apps/gitea-sqlite) | amd64、arm64 | 使用 SQLite 的单容器 Git 托管服务 |
 | [Kasm Chrome](apps/kasmweb-chrome) | amd64 | 通过浏览器访问 Chrome 桌面，持久化用户目录 |
-| [VLESS Reality](apps/sing-box-reality) | amd64 | 基于 sing-box 的 VLESS Reality 入站服务 |
+| [VLESS WS TLS](apps/sing-box-reality) | amd64 | VLESS WebSocket 入站，由前置反向代理提供 TLS |
+| [Hysteria2](apps/hysteria2) | amd64、arm64 | 基于 QUIC / UDP 的代理服务 |
 
 ## 校验
 
@@ -87,7 +88,7 @@ python3 scripts/validate-apps.py
 python3 -m unittest discover -s tests -v
 ```
 
-测试使用临时目录，不同步实际应用商店。设置 `SING_BOX_BINARY` 为包中镜像对应版本的 sing-box 可执行文件路径后，还会检查真实配置及 IPv4/IPv6 TCP 监听；未设置且系统未安装时跳过这两项。完整安装和升级仍需在 1Panel 中验证。
+测试使用临时目录，不同步实际应用商店。设置 `SING_BOX_BINARY` 为包中镜像对应版本的 sing-box 可执行文件路径后，还会检查真实配置及 IPv4/IPv6 TCP 监听；未设置且系统未安装时跳过真实二进制测试。完整安装和升级仍需在 1Panel 中验证。
 
 制作应用前请阅读[应用制作规范](1Panel本地应用制作规范.md)。
 
