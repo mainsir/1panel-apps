@@ -75,7 +75,7 @@ REPO_URL=/opt/1panel-apps bash /opt/1panel-apps/scripts/sync-to-1panel.sh
 | [sing-box SOCKS5](apps/sing-box-socks5) | amd64、arm64、arm/v7 | SOCKS5 代理，可选同端口 HTTP |
 | [Gitea SQLite](apps/gitea-sqlite) | amd64、arm64 | 使用 SQLite 的单容器 Git 托管服务 |
 | [Kasm Chrome](apps/kasmweb-chrome) | amd64 | 通过浏览器访问 Chrome 桌面，持久化用户目录 |
-| [VLESS WS TLS](apps/sing-box-reality) | amd64 | VLESS WebSocket 入站，由前置反向代理提供 TLS |
+| [VLESS WS TLS](apps/vless-ws-tls) | amd64 | VLESS WebSocket 入站，由前置反向代理提供 TLS |
 | [Hysteria2](apps/hysteria2) | amd64、arm64 | 基于 QUIC / UDP 的代理服务 |
 
 ## 校验

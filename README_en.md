@@ -75,7 +75,7 @@ For scheduled synchronization, create a Shell task in 1Panel and use the downloa
 | [sing-box SOCKS5](apps/sing-box-socks5) | amd64, arm64, arm/v7 | SOCKS5 proxy with optional HTTP on the same port |
 | [Gitea SQLite](apps/gitea-sqlite) | amd64, arm64 | Single-container Git hosting with SQLite |
 | [Kasm Chrome](apps/kasmweb-chrome) | amd64 | Browser-accessible Chrome desktop with a persistent user directory |
-| [VLESS WS TLS](apps/sing-box-reality) | amd64 | VLESS WebSocket inbound with TLS at the reverse proxy |
+| [VLESS WS TLS](apps/vless-ws-tls) | amd64 | VLESS WebSocket inbound with TLS at the reverse proxy |
 | [Hysteria2](apps/hysteria2) | amd64, arm64 | QUIC / UDP proxy service |
 
 ## Validation

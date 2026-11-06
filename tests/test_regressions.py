@@ -12,7 +12,7 @@ import unittest
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
-ENTRY = ROOT / 'apps/sing-box-reality/1.0.1/scripts/entrypoint.sh'
+ENTRY = ROOT / 'apps/vless-ws-tls/1.0.1/scripts/entrypoint.sh'
 MOCK = '''#!/bin/sh
 case "$1 $2" in
   'generate uuid') echo 11111111-1111-4111-8111-111111111111 ;;
@@ -296,7 +296,7 @@ class RealSingBoxTests(unittest.TestCase):
         self.assertEqual(outbound['password'], '中文"\\password')
 
     def test_current_ws_config_keeps_loopback_and_uuid(self):
-        entry = ROOT / 'apps/sing-box-reality/1.0.4/scripts/entrypoint.sh'
+        entry = ROOT / 'apps/vless-ws-tls/1.0.5/scripts/entrypoint.sh'
         self.generate(entry=entry, PUBLIC_HOST='cdn.example.com')
         keys = (self.data / 'keys.env').read_bytes()
         self.generate(entry=entry, PUBLIC_HOST='cdn.example.com', WS_PATH='/changed')
@@ -501,6 +501,8 @@ class SocksPackageTests(unittest.TestCase):
 
 
 class WsEntrypointTests(unittest.TestCase):
+    default_link_name = 'SingBox-WS'
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
@@ -511,7 +513,7 @@ class WsEntrypointTests(unittest.TestCase):
         mock.write_text(MOCK)
         mock.chmod(0o755)
         self.data = self.work / 'data'
-        self.entry = ROOT / 'apps/sing-box-reality/1.0.2/scripts/entrypoint.sh'
+        self.entry = ROOT / 'apps/vless-ws-tls/1.0.2/scripts/entrypoint.sh'
 
     def start(self, **values):
         cleared = (
@@ -559,7 +561,7 @@ class WsEntrypointTests(unittest.TestCase):
         expected = (
             f'vless://{uid}@cdn.example.com:443?encryption=none&security=tls'
             f'&sni=cdn.example.com&fp=chrome&type=ws&host=cdn.example.com'
-            f'&path={quote(path, safe="")}&ed=2048&eh=Sec-WebSocket-Protocol#SingBox-WS')
+            f'&path={quote(path, safe="")}&ed=2048&eh=Sec-WebSocket-Protocol#{self.default_link_name}')
         self.assertEqual(self.link(), expected)
         parsed = urlsplit(self.link())
         query = parse_qs(parsed.query)
@@ -708,7 +710,7 @@ class WsEntrypointTests(unittest.TestCase):
 
 class WsPackageTests(unittest.TestCase):
     def setUp(self):
-        self.app = ROOT / 'apps/sing-box-reality'
+        self.app = ROOT / 'apps/vless-ws-tls'
         self.version = self.app / '1.0.2'
 
     def test_compose_matches_form_and_drops_reality(self):
@@ -717,7 +719,7 @@ class WsPackageTests(unittest.TestCase):
         fields = {field['envKey']: field for field in form['additionalProperties']['formFields']}
         compose_text = (self.version / 'docker-compose.yml').read_text()
         compose = yaml.safe_load(compose_text)
-        service = compose['services']['sing-box-reality']
+        service = compose['services']['vless-ws-tls']
         self.assertEqual(service['image'], 'ghcr.io/sagernet/sing-box:v1.13.14')
         self.assertEqual(service['restart'], 'always')
         self.assertEqual(service['network_mode'], 'host')
@@ -753,7 +755,7 @@ class WsPackageTests(unittest.TestCase):
         import yaml
         root = yaml.safe_load((self.app / 'data.yml').read_text())
         props = root['additionalProperties']
-        self.assertEqual(props['key'], 'sing-box-reality')
+        self.assertEqual(props['key'], 'vless-ws-tls')
         self.assertEqual(root['name'], 'VLESS WS TLS')
         self.assertEqual(props['name'], 'VLESS WS TLS')
         self.assertIn('WebSocket', props['shortDescZh'])
@@ -772,7 +774,7 @@ class WsPackageTests(unittest.TestCase):
 class Ws103EntrypointTests(WsEntrypointTests):
     def setUp(self):
         super().setUp()
-        self.entry = ROOT / 'apps/sing-box-reality/1.0.3/scripts/entrypoint.sh'
+        self.entry = ROOT / 'apps/vless-ws-tls/1.0.3/scripts/entrypoint.sh'
 
     def test_path_host_and_port_changes(self):
         from urllib.parse import parse_qs, unquote, urlsplit
@@ -789,7 +791,7 @@ class Ws103EntrypointTests(WsEntrypointTests):
         self.assertEqual(parsed.port, 443)
         self.assertEqual(unquote(parse_qs(parsed.query)['path'][0]), '/cdn-cgi/custom')
         self.assertEqual(unquote(parse_qs(parsed.query)['sni'][0]), '2001:db8::1')
-        self.assertEqual(unquote(parsed.fragment), 'SingBox-WS')
+        self.assertEqual(unquote(parsed.fragment), self.default_link_name)
         self.assertIn('本机入站: 127.0.0.1:18443', (self.data / 'client.txt').read_text())
 
     def test_panel_env_preserves_dollar_values(self):
@@ -815,7 +817,7 @@ class Ws103EntrypointTests(WsEntrypointTests):
         outbound = self.config()['outbounds'][0]
         self.assertEqual(outbound['username'], 'file user')
         self.assertEqual(outbound['password'], 'p@ss"w$ord')
-        self.assertTrue(self.link().endswith('#SingBox-WS'))
+        self.assertTrue(self.link().endswith('#' + self.default_link_name))
         self.assertNotIn('name%241', self.link())
 
     def test_invalid_values_do_not_start(self):
@@ -851,12 +853,12 @@ class Ws103EntrypointTests(WsEntrypointTests):
                             LINK_NAME='bad\nname')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.config()['inbounds'][0]['listen'], '127.0.0.1')
-        self.assertTrue(self.link().endswith('#SingBox-WS'))
+        self.assertTrue(self.link().endswith('#' + self.default_link_name))
 
 
 class Ws103PackageTests(unittest.TestCase):
     def setUp(self):
-        self.app = ROOT / 'apps/sing-box-reality'
+        self.app = ROOT / 'apps/vless-ws-tls'
         self.version = self.app / '1.0.3'
 
     def test_form_drops_tz_listen_host_and_link_name(self):
@@ -865,7 +867,7 @@ class Ws103PackageTests(unittest.TestCase):
         fields = {field['envKey']: field for field in form['additionalProperties']['formFields']}
         compose_text = (self.version / 'docker-compose.yml').read_text()
         compose = yaml.safe_load(compose_text)
-        service = compose['services']['sing-box-reality']
+        service = compose['services']['vless-ws-tls']
         self.assertEqual(set(fields), {
             'PANEL_APP_PORT_TCP', 'PUBLIC_HOST', 'WS_PATH',
             'SOCKS5_HOST', 'SOCKS5_PORT', 'SOCKS5_USER', 'SOCKS5_PASS'})
@@ -935,7 +937,7 @@ class GiteaSqliteTests(unittest.TestCase):
 class Ws104EntrypointTests(Ws103EntrypointTests):
     def setUp(self):
         super().setUp()
-        self.entry = ROOT / 'apps/sing-box-reality/1.0.4/scripts/entrypoint.sh'
+        self.entry = ROOT / 'apps/vless-ws-tls/1.0.4/scripts/entrypoint.sh'
 
     def test_uuid_persists_across_parameter_changes_and_old_reality_keys(self):
         self.data.mkdir()
@@ -993,6 +995,14 @@ class Ws104EntrypointTests(Ws103EntrypointTests):
         self.assertFalse((self.data / 'keys.env').exists())
         self.assertFalse((self.data / 'started').exists())
 
+
+
+class Ws105EntrypointTests(Ws104EntrypointTests):
+    default_link_name = 'VLESS-WS-TLS'
+
+    def setUp(self):
+        super().setUp()
+        self.entry = ROOT / 'apps/vless-ws-tls/1.0.5/scripts/entrypoint.sh'
 
 
 if __name__ == '__main__':

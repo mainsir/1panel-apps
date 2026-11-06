@@ -32,7 +32,7 @@ apps/<app-key>/
 
 | 项 | 规则 | 示例 |
 |---|---|---|
-| `app-key` | 小写英文、数字、`-`；与目录名、`additionalProperties.key` 一致 | `sing-box-reality` |
+| `app-key` | 小写英文、数字、`-`；与目录名、`additionalProperties.key` 一致 | `vless-ws-tls` |
 | 版本目录 | 去掉 `v` 前缀；优先与上游镜像版本一致 | 镜像 `v1.13.14` → 目录 `1.13.14` |
 | 升级 | 1Panel 按版本目录识别新版本，新增目录即为新版本 | `1.13.14/`、`1.14.2/` |
 

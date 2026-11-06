@@ -5,7 +5,7 @@ title: VLESS WS TLS
 description: VLESS WebSocket inbound with reverse-proxy TLS, based on sing-box
 
 additionalProperties:
-  key: sing-box-reality
+  key: vless-ws-tls
   name: VLESS WS TLS
   tags:
     - Tool

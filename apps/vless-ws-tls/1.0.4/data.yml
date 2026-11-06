@@ -1,0 +1,70 @@
+additionalProperties:
+  formFields:
+    - default: ""
+      edit: true
+      envKey: PUBLIC_HOST
+      labelZh: 客户端域名
+      labelEn: Client domain
+      description:
+        zh: 填写已解析到本机并配置好 HTTPS 证书的域名，不含 https:// 或路径。
+        en: Enter a domain pointing to this host with an HTTPS certificate configured, without https:// or a path.
+      required: true
+      type: text
+
+    - default: 18443
+      edit: true
+      envKey: PANEL_APP_PORT_TCP
+      labelZh: 本机端口（默认即可）
+      labelEn: Local port (keep default)
+      description:
+        zh: 通常无需修改；端口冲突时再改，并同步修改反代端口。客户端使用 443。
+        en: Change only if the port is occupied, and update the reverse proxy port to match. Clients use port 443.
+      required: true
+      rule: paramPort
+      type: number
+
+    - default: /cdn-cgi/assets/v7kQm2pLx9nR
+      edit: true
+      envKey: WS_PATH
+      labelZh: WS 路径（默认即可）
+      labelEn: WS path (keep default)
+      description:
+        zh: 通常无需修改，也不会自动变化。反代路径必须与此一致；修改后需更新客户端链接。
+        en: Normally keep the default; it does not change automatically. Match the reverse proxy path and update client links if changed.
+      required: true
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_HOST
+      labelZh: SOCKS5 地址（可选）
+      labelEn: SOCKS5 host (optional)
+      description:
+        zh: 直连时以下四项全部留空。使用 SOCKS5 出口时填写地址和端口；需要认证时再填写账号和密码。
+        en: For direct access, leave all four SOCKS5 fields empty. For a SOCKS5 outbound, set host and port; add username and password only if authentication is required.
+      required: false
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_PORT
+      labelZh: SOCKS5 端口（可选）
+      labelEn: SOCKS5 port (optional)
+      required: false
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_USER
+      labelZh: SOCKS5 账号（可选）
+      labelEn: SOCKS5 username (optional)
+      required: false
+      type: text
+
+    - default: ""
+      edit: true
+      envKey: SOCKS5_PASS
+      labelZh: SOCKS5 密码（可选）
+      labelEn: SOCKS5 password (optional)
+      required: false
+      type: password
