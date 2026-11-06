@@ -639,7 +639,7 @@ class WsPackageTests(unittest.TestCase):
         self.assertEqual(fields['PANEL_APP_PORT_TCP']['default'], 18443)
         self.assertEqual(fields['PANEL_APP_PORT_TCP']['type'], 'number')
         self.assertEqual(fields['PANEL_APP_PORT_TCP']['rule'], 'paramPort')
-        self.assertEqual(fields['PUBLIC_HOST']['labelZh'], '客户端域名（需配置 HTTPS 证书）')
+        self.assertEqual(fields['PUBLIC_HOST']['labelZh'], '已配置 HTTPS 证书的域名')
         self.assertTrue(fields['PUBLIC_HOST']['required'])
         self.assertEqual(fields['WS_PATH']['default'], '/cdn-cgi/assets/v7kQm2pLx9nR')
         self.assertEqual(fields['SOCKS5_PASS']['type'], 'password')
