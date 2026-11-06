@@ -20,8 +20,8 @@ additionalProperties:
     - default: /cdn-cgi/assets/v7kQm2pLx9nR
       edit: true
       envKey: WS_PATH
-      labelZh: WS 路径（须与反向代理一致）
-      labelEn: WS path (must match the reverse proxy)
+      labelZh: WS 路径（默认即可）
+      labelEn: WS path (keep default)
       required: true
       type: text
 
