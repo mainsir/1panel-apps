@@ -3,11 +3,8 @@ additionalProperties:
     - default: ""
       edit: true
       envKey: PUBLIC_HOST
-      labelZh: 客户端域名
-      labelEn: Client domain
-      description:
-        zh: 填写已配置 HTTPS 证书的域名。
-        en: Enter a domain with an HTTPS certificate configured.
+      labelZh: 客户端域名（需配置 HTTPS 证书）
+      labelEn: Client domain (HTTPS certificate required)
       required: true
       type: text
 
