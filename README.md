@@ -88,7 +88,7 @@ python3 scripts/validate-apps.py
 python3 -m unittest discover -s tests -v
 ```
 
-测试使用临时目录，不同步实际应用商店。设置 `SING_BOX_BINARY` 为包中镜像对应版本的 sing-box 可执行文件路径后，还会检查真实配置及 IPv4/IPv6 TCP 监听；未设置且系统未安装时跳过真实二进制测试。完整安装和升级仍需在 1Panel 中验证。
+测试使用临时目录，不同步实际应用商店。设置 `SING_BOX_BINARY` 为包中镜像对应版本的 sing-box 可执行文件路径后，还会检查真实配置及本机 IPv4 TCP 监听；未设置且系统未安装时跳过真实二进制测试。完整安装和升级仍需在 1Panel 中验证。
 
 制作应用前请阅读[应用制作规范](1Panel本地应用制作规范.md)。
 

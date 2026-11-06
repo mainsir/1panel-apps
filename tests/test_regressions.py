@@ -12,156 +12,15 @@ import unittest
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
-ENTRY = ROOT / 'apps/vless-ws-tls/1.0.1/scripts/entrypoint.sh'
+ENTRY = ROOT / 'apps/vless-ws-tls/1.0.5/scripts/entrypoint.sh'
 MOCK = '''#!/bin/sh
 case "$1 $2" in
   'generate uuid') echo 11111111-1111-4111-8111-111111111111 ;;
-  'generate reality-keypair') printf 'PrivateKey: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\\nPublicKey: BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\\n' ;;
-  'generate rand') echo abcd1234 ;;
   'check -c') python3 -c 'import json,sys; json.load(open(sys.argv[1]))' "$3" ;;
   'run -c') touch "$DATA_DIR/started" ;;
   *) exit 1 ;;
 esac
 '''
-
-
-class EntrypointTests(unittest.TestCase):
-    def setUp(self):
-        self.temp = tempfile.TemporaryDirectory()
-        self.addCleanup(self.temp.cleanup)
-        self.work = Path(self.temp.name)
-        self.bin = self.work / 'bin'
-        self.bin.mkdir()
-        mock = self.bin / 'sing-box'
-        mock.write_text(MOCK)
-        mock.chmod(0o755)
-        self.data = self.work / 'data'
-
-    def start(self, **values):
-        env = {k: v for k, v in os.environ.items() if k not in (
-            'PANEL_APP_PORT_TCP', 'REALITY_SNI', 'PUBLIC_HOST', 'LINK_NAME',
-            'SOCKS5_HOST', 'SOCKS5_PORT', 'SOCKS5_USER', 'SOCKS5_PASS')}
-        env.update(PATH=f'{self.bin}:{env["PATH"]}', DATA_DIR=str(self.data))
-        env.update(values)
-        return subprocess.run(['sh', str(ENTRY)], env=env, capture_output=True, text=True)
-
-    def config(self):
-        return json.loads((self.data / 'config.json').read_text())
-
-    def test_credentials_preserve_special_characters(self):
-        for password in ['ab"cd', r'ab\ncd', ' trailing space ', '中文\t密码\n\n']:
-            with self.subTest(password=password):
-                result = self.start(SOCKS5_HOST='proxy.example.com', SOCKS5_PORT='1080',
-                                    SOCKS5_USER=' user"\\ ', SOCKS5_PASS=password)
-                self.assertEqual(result.returncode, 0, result.stderr)
-                outbound = self.config()['outbounds'][0]
-                self.assertEqual(outbound['username'], ' user"\\ ')
-                self.assertEqual(outbound['password'], password)
-                self.assertEqual((self.data / 'config.json').stat().st_mode & 0o777, 0o600)
-
-    def test_ports_normalize_and_reject_invalid_values(self):
-        result = self.start(PANEL_APP_PORT_TCP='038443', SOCKS5_HOST='proxy.example.com',
-                            SOCKS5_PORT='01080')
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(self.config()['inbounds'][0]['listen_port'], 38443)
-        self.assertEqual(self.config()['outbounds'][0]['server_port'], 1080)
-        for port in ['0', '-1', '65536', '1.5', 'abc', '999999999999999999999']:
-            with self.subTest(port=port):
-                result = self.start(SOCKS5_HOST='proxy.example.com', SOCKS5_PORT=port)
-                self.assertNotEqual(result.returncode, 0)
-                self.assertIn('SOCKS5_PORT', result.stderr)
-
-    def test_incomplete_proxy_settings_fail(self):
-        cases = [dict(SOCKS5_HOST='proxy.example.com'), dict(SOCKS5_PORT='1080'),
-                 dict(SOCKS5_USER='user', SOCKS5_PASS='password'),
-                 dict(SOCKS5_HOST='proxy.example.com', SOCKS5_PORT='1080', SOCKS5_USER='user'),
-                 dict(SOCKS5_HOST='proxy.example.com', SOCKS5_PORT='1080', SOCKS5_PASS='password')]
-        for values in cases:
-            with self.subTest(values=values):
-                self.assertNotEqual(self.start(**values).returncode, 0)
-                self.assertFalse((self.data / 'started').exists())
-
-    def test_keys_persist_and_parameter_changes_take_effect(self):
-        self.assertEqual(self.start().returncode, 0)
-        keys = (self.data / 'keys.env').read_bytes()
-        inode = (self.data / 'keys.env').stat().st_ino
-        mtime = (self.data / 'keys.env').stat().st_mtime_ns
-        result = self.start(PANEL_APP_PORT_TCP='40443', REALITY_SNI='example.com')
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual((self.data / 'keys.env').read_bytes(), keys)
-        self.assertEqual((self.data / 'keys.env').stat().st_ino, inode)
-        self.assertEqual((self.data / 'keys.env').stat().st_mtime_ns, mtime)
-        self.assertEqual(self.config()['inbounds'][0]['listen_port'], 40443)
-        self.assertEqual(self.config()['inbounds'][0]['tls']['server_name'], 'example.com')
-
-    def test_share_link_supports_ipv6_and_encoded_names(self):
-        name = '中文 node#1 % &'
-        for host in ['2001:db8::1', '[2001:db8::1]']:
-            result = self.start(PUBLIC_HOST=host, LINK_NAME=name)
-            self.assertEqual(result.returncode, 0, result.stderr)
-            link = next(line for line in (self.data / 'client.txt').read_text().splitlines()
-                        if line.startswith('vless://'))
-            parsed = urlsplit(link)
-            self.assertEqual(parsed.hostname, '2001:db8::1')
-            self.assertEqual(parsed.port, 38443)
-            self.assertEqual(unquote(parsed.fragment), name)
-
-    def test_keys_file_is_not_executed(self):
-        self.data.mkdir()
-        marker = self.work / 'executed'
-        (self.data / 'keys.env').write_text(f'touch {marker}\n')
-        result = self.start()
-        self.assertNotEqual(result.returncode, 0)
-        self.assertFalse(marker.exists())
-        self.assertFalse((self.data / 'started').exists())
-
-    def test_failed_write_preserves_existing_identity_and_config(self):
-        self.assertEqual(self.start().returncode, 0)
-        before = {p.name: p.read_bytes() for p in self.data.iterdir() if p.is_file()}
-        broken = self.bin / 'cat'
-        broken.write_text('#!/bin/sh\nexit 1\n')
-        broken.chmod(0o755)
-        result = self.start(PANEL_APP_PORT_TCP='40443')
-        self.assertNotEqual(result.returncode, 0)
-        for name, content in before.items():
-            self.assertEqual((self.data / name).read_bytes(), content)
-        self.assertFalse(list(self.data.glob('.startup-*')))
-        broken.unlink()
-        self.assertEqual(self.start().returncode, 0)
-        self.assertEqual((self.data / 'keys.env').read_bytes(), before['keys.env'])
-
-    def test_failed_first_key_write_does_not_publish_partial_file(self):
-        broken = self.bin / 'cat'
-        broken.write_text('#!/bin/sh\ncase "$(readlink /proc/$$/fd/1)" in */keys.env) exit 1 ;; esac\nexec /bin/cat "$@"\n')
-        broken.chmod(0o755)
-        result = self.start()
-        self.assertNotEqual(result.returncode, 0)
-        self.assertFalse((self.data / 'keys.env').exists())
-        self.assertFalse((self.data / 'started').exists())
-        self.assertFalse(list(self.data.glob('.startup-*')))
-
-    def test_existing_incomplete_or_invalid_keys_are_not_regenerated(self):
-        self.assertEqual(self.start().returncode, 0)
-        original = (self.data / 'keys.env').read_text()
-        (self.data / 'started').unlink()
-        cases = ['', original.replace('PUBLIC_KEY=', 'MISSING_KEY='),
-                 original.replace('abcd1234', 'not-hex'),
-                 original.replace('11111111-1111-4111-8111-111111111111', 'bad-uuid')]
-        for damaged in cases:
-            with self.subTest(damaged=damaged[:10]):
-                (self.data / 'keys.env').write_text(damaged)
-                result = self.start()
-                self.assertNotEqual(result.returncode, 0)
-                self.assertEqual((self.data / 'keys.env').read_text(), damaged)
-                self.assertFalse((self.data / 'started').exists())
-
-    def test_legacy_keys_without_final_newline_are_preserved(self):
-        self.assertEqual(self.start().returncode, 0)
-        keys = (self.data / 'keys.env').read_bytes().rstrip(b'\n')
-        (self.data / 'keys.env').write_bytes(keys)
-        result = self.start()
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual((self.data / 'keys.env').read_bytes(), keys)
 
 
 class SyncTests(unittest.TestCase):
@@ -282,7 +141,7 @@ class RealSingBoxTests(unittest.TestCase):
             self.env.pop(key, None)
 
     def generate(self, entry=ENTRY, **values):
-        result = subprocess.run(['sh', str(entry)], env=dict(self.env, **values),
+        result = subprocess.run(['sh', str(entry)], env=dict(self.env, **({'PUBLIC_HOST': 'cdn.example.com'} | values)),
                                 capture_output=True, text=True, timeout=10)
         self.assertEqual(result.returncode, 0, result.stderr)
 
@@ -306,20 +165,20 @@ class RealSingBoxTests(unittest.TestCase):
         self.assertEqual(inbound['transport']['path'], '/changed')
         self.assertNotIn('tls', inbound)
 
-    def test_listener_accepts_ipv4_and_ipv6(self):
+    def test_listener_accepts_ipv4_loopback(self):
         try:
-            with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as sock:
-                sock.bind(('::1', 0))
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.bind(('127.0.0.1', 0))
                 port = sock.getsockname()[1]
         except OSError as err:
-            self.skipTest(f'IPv6 loopback unavailable: {err}')
+            self.skipTest(f'Loopback unavailable: {err}')
         self.generate(PANEL_APP_PORT_TCP=str(port), PUBLIC_HOST='::1')
         with (self.work / 'server.log').open('w+') as log:
             proc = subprocess.Popen([SING_BOX, 'run', '-c', str(self.data / 'config.json')],
                                     stdout=log, stderr=log)
             try:
                 deadline = time.monotonic() + 5
-                for host in ['::1', '127.0.0.1']:
+                for host in ['127.0.0.1']:
                     while True:
                         try:
                             with socket.create_connection((host, port), timeout=0.2):
@@ -501,7 +360,7 @@ class SocksPackageTests(unittest.TestCase):
 
 
 class WsEntrypointTests(unittest.TestCase):
-    default_link_name = 'SingBox-WS'
+    default_link_name = 'VLESS-WS-TLS'
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -513,7 +372,7 @@ class WsEntrypointTests(unittest.TestCase):
         mock.write_text(MOCK)
         mock.chmod(0o755)
         self.data = self.work / 'data'
-        self.entry = ROOT / 'apps/vless-ws-tls/1.0.2/scripts/entrypoint.sh'
+        self.entry = ROOT / 'apps/vless-ws-tls/1.0.5/scripts/entrypoint.sh'
 
     def start(self, **values):
         cleared = (
@@ -590,7 +449,7 @@ class WsEntrypointTests(unittest.TestCase):
                             LINK_NAME='中文 node#1 % &')
         self.assertEqual(result.returncode, 0, result.stderr)
         inbound = self.config()['inbounds'][0]
-        self.assertEqual(inbound['listen'], '::1')
+        self.assertEqual(inbound['listen'], '127.0.0.1')
         self.assertEqual(inbound['listen_port'], 18443)
         self.assertEqual(inbound['transport']['path'], '/cdn-cgi/custom')
         parsed = urlsplit(self.link())
@@ -598,26 +457,23 @@ class WsEntrypointTests(unittest.TestCase):
         self.assertEqual(parsed.port, 443)
         self.assertEqual(unquote(parse_qs(parsed.query)['path'][0]), '/cdn-cgi/custom')
         self.assertEqual(unquote(parse_qs(parsed.query)['sni'][0]), '2001:db8::1')
-        self.assertEqual(unquote(parsed.fragment), '中文 node#1 % &')
+        self.assertEqual(unquote(parsed.fragment), self.default_link_name)
+        self.assertIn('本机入站: 127.0.0.1:18443', (self.data / 'client.txt').read_text())
 
     def test_uuid_persists_across_parameter_changes_and_old_reality_keys(self):
         self.data.mkdir()
-        (self.data / 'keys.env').write_text(
-            'SB_UUID=22222222-2222-4222-8222-222222222222\n'
-            'PRIVATE_KEY=do-not-keep\nPUBLIC_KEY=do-not-keep\nSHORT_ID=abcd\n')
-        result = self.start(PUBLIC_HOST='cdn.example.com', PANEL_APP_PORT_TCP='18443')
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual((self.data / 'keys.env').read_text(),
-                         'SB_UUID=22222222-2222-4222-8222-222222222222\n')
-        self.assertEqual(self.config()['inbounds'][0]['users'][0]['uuid'],
-                         '22222222-2222-4222-8222-222222222222')
-        keys = (self.data / 'keys.env').read_bytes()
-        result = self.start(PUBLIC_HOST='cdn.example.com', WS_PATH='/other',
-                            PANEL_APP_PORT_TCP='18444')
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual((self.data / 'keys.env').read_bytes(), keys)
-        self.assertEqual(self.config()['inbounds'][0]['listen_port'], 18444)
-        self.assertEqual(self.config()['inbounds'][0]['transport']['path'], '/other')
+        original = ('SB_UUID=22222222-2222-4222-8222-222222222222\n'
+                    'PRIVATE_KEY=legacy-key\nPUBLIC_KEY=legacy-key\nSHORT_ID=abcd\n')
+        keys = self.data / 'keys.env'
+        keys.write_text(original)
+        before = keys.stat().st_mtime_ns
+        for path in ['/one', '/two']:
+            result = self.start(PUBLIC_HOST='cdn.example.com', WS_PATH=path)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(keys.read_text(), original)
+            self.assertEqual(keys.stat().st_mtime_ns, before)
+            self.assertEqual(self.config()['inbounds'][0]['users'][0]['uuid'],
+                             '22222222-2222-4222-8222-222222222222')
 
     def test_invalid_persisted_uuid_is_not_executed_or_replaced(self):
         self.data.mkdir()
@@ -634,11 +490,13 @@ class WsEntrypointTests(unittest.TestCase):
     def test_keys_file_is_not_executed(self):
         self.data.mkdir()
         marker = self.work / 'executed'
-        (self.data / 'keys.env').write_text(f'touch {marker}\n')
+        original = f'touch {marker}\n'
+        (self.data / 'keys.env').write_text(original)
         result = self.start(PUBLIC_HOST='cdn.example.com')
-        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotEqual(result.returncode, 0)
         self.assertFalse(marker.exists())
-        self.assertTrue(self.link().startswith('vless://11111111-1111-4111-8111-111111111111@'))
+        self.assertEqual((self.data / 'keys.env').read_text(), original)
+        self.assertFalse((self.data / 'started').exists())
 
     def test_special_characters_are_not_expanded(self):
         marker = self.work / 'pwned'
@@ -657,142 +515,6 @@ class WsEntrypointTests(unittest.TestCase):
                 self.assertEqual(self.config()['inbounds'][0]['transport']['path'], payload)
                 self.assertFalse(marker.exists())
                 self.assertIn(f'socks5://proxy.example.com:1080', (self.data / 'client.txt').read_text())
-
-    def test_panel_env_preserves_dollar_values(self):
-        env_file = self.work / 'panel.env'
-        env_file.write_text(
-            'PUBLIC_HOST=cdn.example.com\n'
-            'WS_PATH=/a$b\n'
-            'LINK_NAME=name$1\n'
-            'SOCKS5_HOST=proxy.example.com\n'
-            'SOCKS5_USER=file user\n'
-            'SOCKS5_PASS=p@ss"w$ord\n')
-        result = self.start(PUBLIC_HOST='from-env.example', WS_PATH='/from-env',
-                            SOCKS5_HOST='proxy.example.com', SOCKS5_PORT='1080',
-                            SOCKS5_USER='env-user', SOCKS5_PASS='expanded',
-                            PANEL_ENV_FILE=str(env_file))
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(self.config()['inbounds'][0]['transport']['path'], '/a$b')
-        outbound = self.config()['outbounds'][0]
-        self.assertEqual(outbound['username'], 'file user')
-        self.assertEqual(outbound['password'], 'p@ss"w$ord')
-        self.assertIn('#name%241', self.link())
-
-    def test_invalid_values_do_not_start(self):
-        cases = [
-            dict(PUBLIC_HOST='https://cdn.example.com'),
-            dict(PUBLIC_HOST='cdn.example.com:443'),
-            dict(PUBLIC_HOST='cdn.example.com/path'),
-            dict(PUBLIC_HOST='bad host.example'),
-            dict(PUBLIC_HOST='cdn.example.com', LISTEN_HOST='127.0.0.1:18443'),
-            dict(PUBLIC_HOST='cdn.example.com', PANEL_APP_PORT_TCP='0'),
-            dict(PUBLIC_HOST='cdn.example.com', PANEL_APP_PORT_TCP='65536'),
-            dict(PUBLIC_HOST='cdn.example.com', WS_PATH='/has\nnewline'),
-            dict(PUBLIC_HOST='cdn.example.com', SOCKS5_HOST='proxy.example.com'),
-            dict(PUBLIC_HOST='cdn.example.com', SOCKS5_PORT='1080'),
-            dict(PUBLIC_HOST='cdn.example.com', SOCKS5_USER='user', SOCKS5_PASS='password'),
-            dict(PUBLIC_HOST='cdn.example.com', SOCKS5_HOST='proxy.example.com',
-                 SOCKS5_PORT='1080', SOCKS5_USER='user'),
-            dict(PUBLIC_HOST='cdn.example.com', SOCKS5_HOST='proxy.example.com',
-                 SOCKS5_PORT='01080', SOCKS5_PASS='password'),
-            dict(PUBLIC_HOST='cdn.example.com', SOCKS5_HOST='proxy.example.com',
-                 SOCKS5_PORT='abc'),
-        ]
-        for values in cases:
-            with self.subTest(values=values):
-                started = self.data / 'started'
-                if started.exists():
-                    started.unlink()
-                result = self.start(**values)
-                self.assertNotEqual(result.returncode, 0, result.stderr)
-                self.assertFalse(started.exists())
-
-
-class WsPackageTests(unittest.TestCase):
-    def setUp(self):
-        self.app = ROOT / 'apps/vless-ws-tls'
-        self.version = self.app / '1.0.2'
-
-    def test_compose_matches_form_and_drops_reality(self):
-        import yaml
-        form = yaml.safe_load((self.version / 'data.yml').read_text())
-        fields = {field['envKey']: field for field in form['additionalProperties']['formFields']}
-        compose_text = (self.version / 'docker-compose.yml').read_text()
-        compose = yaml.safe_load(compose_text)
-        service = compose['services']['vless-ws-tls']
-        self.assertEqual(service['image'], 'ghcr.io/sagernet/sing-box:v1.13.14')
-        self.assertEqual(service['restart'], 'always')
-        self.assertEqual(service['network_mode'], 'host')
-        self.assertNotIn('ports', service)
-        self.assertNotIn('networks', service)
-        self.assertNotIn('networks', compose)
-        self.assertEqual(service['entrypoint'], ['/bin/sh', '/entrypoint.sh'])
-        self.assertEqual(service['labels']['createdBy'], 'Apps')
-        self.assertIn('./data:/data', service['volumes'])
-        self.assertIn('./scripts/entrypoint.sh:/entrypoint.sh:ro', service['volumes'])
-        self.assertIn('./.env:/run/panel.env:ro', service['volumes'])
-        self.assertEqual(set(service['environment']), set(fields))
-        used = set(__import__('re').findall(r'\$\{([A-Za-z0-9_]+)\}', compose_text))
-        self.assertTrue(used <= set(fields) | {'CONTAINER_NAME'})
-        self.assertNotIn('REALITY_SNI', fields)
-        self.assertNotIn('REALITY_SNI', compose_text)
-        self.assertEqual(fields['PANEL_APP_PORT_TCP']['default'], 18443)
-        self.assertEqual(fields['PANEL_APP_PORT_TCP']['type'], 'number')
-        self.assertEqual(fields['PANEL_APP_PORT_TCP']['rule'], 'paramPort')
-        self.assertEqual(fields['LISTEN_HOST']['default'], '127.0.0.1')
-        self.assertEqual(fields['PUBLIC_HOST']['labelZh'], '客户端域名')
-        self.assertTrue(fields['PUBLIC_HOST']['required'])
-        self.assertEqual(fields['WS_PATH']['default'], '/cdn-cgi/assets/v7kQm2pLx9nR')
-        self.assertEqual(fields['LINK_NAME']['default'], 'SingBox-WS')
-        self.assertEqual(fields['TZ']['default'], 'Asia/Shanghai')
-        self.assertEqual(fields['SOCKS5_PASS']['type'], 'password')
-        entry = (self.version / 'scripts/entrypoint.sh').read_text()
-        self.assertNotIn('reality', entry.lower())
-        self.assertNotIn('xtls-rprx-vision', entry)
-        self.assertTrue(os.access(self.version / 'scripts/entrypoint.sh', os.X_OK))
-
-    def test_metadata_describes_ws_tls(self):
-        import yaml
-        root = yaml.safe_load((self.app / 'data.yml').read_text())
-        props = root['additionalProperties']
-        self.assertEqual(props['key'], 'vless-ws-tls')
-        self.assertEqual(root['name'], 'VLESS WS TLS')
-        self.assertEqual(props['name'], 'VLESS WS TLS')
-        self.assertIn('WebSocket', props['shortDescZh'])
-        self.assertIn('前置反代', props['description']['zh'])
-        self.assertNotIn('Reality', props['shortDescZh'])
-        self.assertNotIn('Reality', props['shortDescEn'])
-        for name in ('README.md', 'README_en.md'):
-            text = (self.app / name).read_text()
-            self.assertIn('proxy_pass http://127.0.0.1:18443', text)
-            self.assertIn('proxy_set_header Upgrade $http_upgrade', text)
-            self.assertIn('WebSocket', text)
-        self.assertIn('VLESS WS TLS', (ROOT / 'README.md').read_text())
-        self.assertTrue((self.app / '1.0.1' / 'docker-compose.yml').is_file())
-
-
-class Ws103EntrypointTests(WsEntrypointTests):
-    def setUp(self):
-        super().setUp()
-        self.entry = ROOT / 'apps/vless-ws-tls/1.0.3/scripts/entrypoint.sh'
-
-    def test_path_host_and_port_changes(self):
-        from urllib.parse import parse_qs, unquote, urlsplit
-        result = self.start(PUBLIC_HOST='[2001:db8::1]', WS_PATH='cdn-cgi/custom',
-                            PANEL_APP_PORT_TCP='018443', LISTEN_HOST='::1',
-                            LINK_NAME='中文 node#1 % &')
-        self.assertEqual(result.returncode, 0, result.stderr)
-        inbound = self.config()['inbounds'][0]
-        self.assertEqual(inbound['listen'], '127.0.0.1')
-        self.assertEqual(inbound['listen_port'], 18443)
-        self.assertEqual(inbound['transport']['path'], '/cdn-cgi/custom')
-        parsed = urlsplit(self.link())
-        self.assertEqual(parsed.hostname, '2001:db8::1')
-        self.assertEqual(parsed.port, 443)
-        self.assertEqual(unquote(parse_qs(parsed.query)['path'][0]), '/cdn-cgi/custom')
-        self.assertEqual(unquote(parse_qs(parsed.query)['sni'][0]), '2001:db8::1')
-        self.assertEqual(unquote(parsed.fragment), self.default_link_name)
-        self.assertIn('本机入站: 127.0.0.1:18443', (self.data / 'client.txt').read_text())
 
     def test_panel_env_preserves_dollar_values(self):
         env_file = self.work / 'panel.env'
@@ -855,116 +577,6 @@ class Ws103EntrypointTests(WsEntrypointTests):
         self.assertEqual(self.config()['inbounds'][0]['listen'], '127.0.0.1')
         self.assertTrue(self.link().endswith('#' + self.default_link_name))
 
-
-class Ws103PackageTests(unittest.TestCase):
-    def setUp(self):
-        self.app = ROOT / 'apps/vless-ws-tls'
-        self.version = self.app / '1.0.3'
-
-    def test_form_drops_tz_listen_host_and_link_name(self):
-        import yaml
-        form = yaml.safe_load((self.version / 'data.yml').read_text())
-        fields = {field['envKey']: field for field in form['additionalProperties']['formFields']}
-        compose_text = (self.version / 'docker-compose.yml').read_text()
-        compose = yaml.safe_load(compose_text)
-        service = compose['services']['vless-ws-tls']
-        self.assertEqual(set(fields), {
-            'PANEL_APP_PORT_TCP', 'PUBLIC_HOST', 'WS_PATH',
-            'SOCKS5_HOST', 'SOCKS5_PORT', 'SOCKS5_USER', 'SOCKS5_PASS'})
-        self.assertEqual(set(service['environment']), set(fields))
-        used = set(__import__('re').findall(r'\$\{([A-Za-z0-9_]+)\}', compose_text))
-        self.assertTrue(used <= set(fields) | {'CONTAINER_NAME'})
-        for key in ('TZ', 'LISTEN_HOST', 'LINK_NAME'):
-            self.assertNotIn(key, fields)
-            self.assertNotIn('${%s}' % key, compose_text)
-        self.assertEqual(service['image'], 'ghcr.io/sagernet/sing-box:v1.13.14')
-        self.assertEqual(service['network_mode'], 'host')
-        self.assertEqual(fields['PANEL_APP_PORT_TCP']['default'], 18443)
-        self.assertEqual(fields['PANEL_APP_PORT_TCP']['type'], 'number')
-        self.assertEqual(fields['PANEL_APP_PORT_TCP']['rule'], 'paramPort')
-        socks = {
-            'SOCKS5_HOST': ('SOCKS5 落地地址（留空=直连）', 'SOCKS5 egress host (empty=direct)'),
-            'SOCKS5_PORT': ('SOCKS5 落地端口（留空=直连）', 'SOCKS5 egress port (empty=direct)'),
-            'SOCKS5_USER': ('SOCKS5 账号（可选）', 'SOCKS5 username (optional)'),
-            'SOCKS5_PASS': ('SOCKS5 密码（可选）', 'SOCKS5 password (optional)'),
-        }
-        for key, (zh, en) in socks.items():
-            self.assertEqual(fields[key]['default'], '')
-            self.assertFalse(fields[key]['required'])
-            self.assertEqual(fields[key]['labelZh'], zh)
-            self.assertEqual(fields[key]['labelEn'], en)
-            self.assertNotIn('高级', fields[key]['labelZh'])
-            self.assertNotIn('Advanced', fields[key]['labelEn'])
-            self.assertNotIn('[', fields[key]['labelEn'])
-            self.assertNotIn(']', fields[key]['labelEn'])
-        self.assertEqual(fields['SOCKS5_PASS']['type'], 'password')
-        entry = (self.version / 'scripts/entrypoint.sh').read_text()
-        self.assertIn('\nLISTEN_HOST=127.0.0.1\n', entry)
-        self.assertIn('\nLINK_NAME=SingBox-WS\n', entry)
-        self.assertNotIn('load_panel_value LISTEN_HOST', entry)
-        self.assertNotIn('load_panel_value LINK_NAME', entry)
-        self.assertNotIn('TZ', entry)
-        self.assertTrue(os.access(self.version / 'scripts/entrypoint.sh', os.X_OK))
-        for name in ('README.md', 'README_en.md'):
-            text = (self.app / name).read_text()
-            self.assertIn('1.0.3', text)
-            self.assertIn('127.0.0.1', text)
-            self.assertIn('SingBox-WS', text)
-            self.assertNotIn('Asia/Shanghai', text)
-        old = yaml.safe_load((self.app / '1.0.2' / 'data.yml').read_text())
-        old_keys = {field['envKey'] for field in old['additionalProperties']['formFields']}
-        self.assertEqual(old_keys, set(fields) | {'LISTEN_HOST', 'LINK_NAME', 'TZ'})
-
-
-class GiteaSqliteTests(unittest.TestCase):
-    def test_new_version_forces_container_port_and_closed_registration(self):
-        import yaml
-
-        app = ROOT / 'apps/gitea-sqlite'
-        compose = yaml.safe_load((app / '28.2.0/docker-compose.yml').read_text())
-        service = compose['services']['gitea']
-        self.assertEqual(service['image'], 'gitea/gitea:28.2.0')
-        self.assertIn('${PANEL_APP_PORT_HTTP}:3000', service['ports'])
-        self.assertIn('${PANEL_APP_PORT_SSH}:22', service['ports'])
-        self.assertIn('GITEA__server__HTTP_PORT=3000', service['environment'])
-        self.assertIn('DISABLE_REGISTRATION=true', service['environment'])
-        self.assertNotIn('GITEA__service__DISABLE_REGISTRATION=true', service['environment'])
-        self.assertTrue(os.access(app / '28.2.0/scripts/init.sh', os.X_OK))
-        old = yaml.safe_load((app / '1.27.3/docker-compose.yml').read_text())
-        self.assertEqual(old['services']['gitea']['image'], 'gitea/gitea:1.27.3')
-
-
-class Ws104EntrypointTests(Ws103EntrypointTests):
-    def setUp(self):
-        super().setUp()
-        self.entry = ROOT / 'apps/vless-ws-tls/1.0.4/scripts/entrypoint.sh'
-
-    def test_uuid_persists_across_parameter_changes_and_old_reality_keys(self):
-        self.data.mkdir()
-        original = ('SB_UUID=22222222-2222-4222-8222-222222222222\n'
-                    'PRIVATE_KEY=legacy-key\nPUBLIC_KEY=legacy-key\nSHORT_ID=abcd\n')
-        keys = self.data / 'keys.env'
-        keys.write_text(original)
-        before = keys.stat().st_mtime_ns
-        for path in ['/one', '/two']:
-            result = self.start(PUBLIC_HOST='cdn.example.com', WS_PATH=path)
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual(keys.read_text(), original)
-            self.assertEqual(keys.stat().st_mtime_ns, before)
-            self.assertEqual(self.config()['inbounds'][0]['users'][0]['uuid'],
-                             '22222222-2222-4222-8222-222222222222')
-
-    def test_keys_file_is_not_executed(self):
-        self.data.mkdir()
-        marker = self.work / 'executed'
-        original = f'touch {marker}\n'
-        (self.data / 'keys.env').write_text(original)
-        result = self.start(PUBLIC_HOST='cdn.example.com')
-        self.assertNotEqual(result.returncode, 0)
-        self.assertFalse(marker.exists())
-        self.assertEqual((self.data / 'keys.env').read_text(), original)
-        self.assertFalse((self.data / 'started').exists())
-
     def test_write_failure_preserves_keys_and_last_config(self):
         self.assertEqual(self.start(PUBLIC_HOST='cdn.example.com').returncode, 0)
         before = {p.name: p.read_bytes() for p in self.data.iterdir() if p.is_file()}
@@ -996,13 +608,139 @@ class Ws104EntrypointTests(Ws103EntrypointTests):
         self.assertFalse((self.data / 'started').exists())
 
 
-
-class Ws105EntrypointTests(Ws104EntrypointTests):
-    default_link_name = 'VLESS-WS-TLS'
-
+class WsPackageTests(unittest.TestCase):
     def setUp(self):
-        super().setUp()
-        self.entry = ROOT / 'apps/vless-ws-tls/1.0.5/scripts/entrypoint.sh'
+        self.app = ROOT / 'apps/vless-ws-tls'
+        self.version = self.app / '1.0.5'
+
+    def test_compose_matches_form_and_drops_reality(self):
+        import yaml
+        form = yaml.safe_load((self.version / 'data.yml').read_text())
+        fields = {field['envKey']: field for field in form['additionalProperties']['formFields']}
+        compose_text = (self.version / 'docker-compose.yml').read_text()
+        compose = yaml.safe_load(compose_text)
+        service = compose['services']['vless-ws-tls']
+        self.assertEqual(service['image'], 'ghcr.io/sagernet/sing-box:v1.13.14')
+        self.assertEqual(service['restart'], 'always')
+        self.assertEqual(service['network_mode'], 'host')
+        self.assertNotIn('ports', service)
+        self.assertNotIn('networks', service)
+        self.assertNotIn('networks', compose)
+        self.assertEqual(service['entrypoint'], ['/bin/sh', '/entrypoint.sh'])
+        self.assertEqual(service['labels']['createdBy'], 'Apps')
+        self.assertIn('./data:/data', service['volumes'])
+        self.assertIn('./scripts/entrypoint.sh:/entrypoint.sh:ro', service['volumes'])
+        self.assertIn('./.env:/run/panel.env:ro', service['volumes'])
+        self.assertEqual(set(service['environment']), set(fields))
+        used = set(__import__('re').findall(r'\$\{([A-Za-z0-9_]+)\}', compose_text))
+        self.assertTrue(used <= set(fields) | {'CONTAINER_NAME'})
+        self.assertNotIn('REALITY_SNI', fields)
+        self.assertNotIn('REALITY_SNI', compose_text)
+        self.assertEqual(fields['PANEL_APP_PORT_TCP']['default'], 18443)
+        self.assertEqual(fields['PANEL_APP_PORT_TCP']['type'], 'number')
+        self.assertEqual(fields['PANEL_APP_PORT_TCP']['rule'], 'paramPort')
+        self.assertEqual(fields['PUBLIC_HOST']['labelZh'], '客户端域名')
+        self.assertTrue(fields['PUBLIC_HOST']['required'])
+        self.assertEqual(fields['WS_PATH']['default'], '/cdn-cgi/assets/v7kQm2pLx9nR')
+        self.assertEqual(fields['SOCKS5_PASS']['type'], 'password')
+        entry = (self.version / 'scripts/entrypoint.sh').read_text()
+        self.assertNotIn('reality', entry.lower())
+        self.assertNotIn('xtls-rprx-vision', entry)
+        self.assertTrue(os.access(self.version / 'scripts/entrypoint.sh', os.X_OK))
+
+    def test_metadata_describes_ws_tls(self):
+        import yaml
+        root = yaml.safe_load((self.app / 'data.yml').read_text())
+        props = root['additionalProperties']
+        self.assertEqual(props['key'], 'vless-ws-tls')
+        self.assertEqual(root['name'], 'VLESS WS TLS')
+        self.assertEqual(props['name'], 'VLESS WS TLS')
+        self.assertIn('WebSocket', props['shortDescZh'])
+        self.assertIn('前置反代', props['description']['zh'])
+        self.assertNotIn('Reality', props['shortDescZh'])
+        self.assertNotIn('Reality', props['shortDescEn'])
+        for name in ('README.md', 'README_en.md'):
+            text = (self.app / name).read_text()
+            self.assertIn('proxy_pass http://127.0.0.1:18443', text)
+            self.assertIn('proxy_set_header Upgrade $http_upgrade', text)
+            self.assertIn('WebSocket', text)
+        self.assertIn('VLESS WS TLS', (ROOT / 'README.md').read_text())
+        self.assertEqual({p.name for p in self.app.iterdir() if p.is_dir()}, {'1.0.5'})
+
+
+class WsCurrentFormTests(unittest.TestCase):
+    def setUp(self):
+        self.app = ROOT / 'apps/vless-ws-tls'
+        self.version = self.app / '1.0.5'
+
+    def test_form_drops_tz_listen_host_and_link_name(self):
+        import yaml
+        form = yaml.safe_load((self.version / 'data.yml').read_text())
+        fields = {field['envKey']: field for field in form['additionalProperties']['formFields']}
+        compose_text = (self.version / 'docker-compose.yml').read_text()
+        compose = yaml.safe_load(compose_text)
+        service = compose['services']['vless-ws-tls']
+        self.assertEqual(set(fields), {
+            'PANEL_APP_PORT_TCP', 'PUBLIC_HOST', 'WS_PATH',
+            'SOCKS5_HOST', 'SOCKS5_PORT', 'SOCKS5_USER', 'SOCKS5_PASS'})
+        self.assertEqual(set(service['environment']), set(fields))
+        used = set(__import__('re').findall(r'\$\{([A-Za-z0-9_]+)\}', compose_text))
+        self.assertTrue(used <= set(fields) | {'CONTAINER_NAME'})
+        for key in ('TZ', 'LISTEN_HOST', 'LINK_NAME'):
+            self.assertNotIn(key, fields)
+            self.assertNotIn('${%s}' % key, compose_text)
+        self.assertEqual(service['image'], 'ghcr.io/sagernet/sing-box:v1.13.14')
+        self.assertEqual(service['network_mode'], 'host')
+        self.assertEqual(fields['PANEL_APP_PORT_TCP']['default'], 18443)
+        self.assertEqual(fields['PANEL_APP_PORT_TCP']['type'], 'number')
+        self.assertEqual(fields['PANEL_APP_PORT_TCP']['rule'], 'paramPort')
+        socks = {
+            'SOCKS5_HOST': ('SOCKS5 地址（可选）', 'SOCKS5 host (optional)'),
+            'SOCKS5_PORT': ('SOCKS5 端口（可选）', 'SOCKS5 port (optional)'),
+            'SOCKS5_USER': ('SOCKS5 账号（可选）', 'SOCKS5 username (optional)'),
+            'SOCKS5_PASS': ('SOCKS5 密码（可选）', 'SOCKS5 password (optional)'),
+        }
+        for key, (zh, en) in socks.items():
+            self.assertEqual(fields[key]['default'], '')
+            self.assertFalse(fields[key]['required'])
+            self.assertEqual(fields[key]['labelZh'], zh)
+            self.assertEqual(fields[key]['labelEn'], en)
+            self.assertNotIn('高级', fields[key]['labelZh'])
+            self.assertNotIn('Advanced', fields[key]['labelEn'])
+            self.assertNotIn('[', fields[key]['labelEn'])
+            self.assertNotIn(']', fields[key]['labelEn'])
+        self.assertEqual(fields['SOCKS5_PASS']['type'], 'password')
+        entry = (self.version / 'scripts/entrypoint.sh').read_text()
+        self.assertIn('\nLISTEN_HOST=127.0.0.1\n', entry)
+        self.assertIn('\nLINK_NAME=VLESS-WS-TLS\n', entry)
+        self.assertNotIn('load_panel_value LISTEN_HOST', entry)
+        self.assertNotIn('load_panel_value LINK_NAME', entry)
+        self.assertNotIn('TZ', entry)
+        self.assertTrue(os.access(self.version / 'scripts/entrypoint.sh', os.X_OK))
+        for name in ('README.md', 'README_en.md'):
+            text = (self.app / name).read_text()
+            self.assertIn('1.0.5', text)
+            self.assertIn('127.0.0.1', text)
+            self.assertIn('VLESS-WS-TLS', text)
+            self.assertNotIn('Asia/Shanghai', text)
+
+
+class GiteaSqliteTests(unittest.TestCase):
+    def test_new_version_forces_container_port_and_closed_registration(self):
+        import yaml
+
+        app = ROOT / 'apps/gitea-sqlite'
+        compose = yaml.safe_load((app / '28.2.0/docker-compose.yml').read_text())
+        service = compose['services']['gitea']
+        self.assertEqual(service['image'], 'gitea/gitea:28.2.0')
+        self.assertIn('${PANEL_APP_PORT_HTTP}:3000', service['ports'])
+        self.assertIn('${PANEL_APP_PORT_SSH}:22', service['ports'])
+        self.assertIn('GITEA__server__HTTP_PORT=3000', service['environment'])
+        self.assertIn('DISABLE_REGISTRATION=true', service['environment'])
+        self.assertNotIn('GITEA__service__DISABLE_REGISTRATION=true', service['environment'])
+        self.assertTrue(os.access(app / '28.2.0/scripts/init.sh', os.X_OK))
+        old = yaml.safe_load((app / '1.27.3/docker-compose.yml').read_text())
+        self.assertEqual(old['services']['gitea']['image'], 'gitea/gitea:1.27.3')
 
 
 if __name__ == '__main__':

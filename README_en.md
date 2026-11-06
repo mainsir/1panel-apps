@@ -88,7 +88,7 @@ python3 scripts/validate-apps.py
 python3 -m unittest discover -s tests -v
 ```
 
-Tests use temporary directories and do not synchronize the live app store. Set `SING_BOX_BINARY` to the sing-box executable matching the image version to validate real configuration and IPv4/IPv6 TCP listeners. Real-binary checks are skipped when no binary is available. Installation and upgrade behavior still require testing in 1Panel.
+Tests use temporary directories and do not synchronize the live app store. Set `SING_BOX_BINARY` to the sing-box executable matching the image version to validate real configuration and IPv4 loopback TCP listeners. Real-binary checks are skipped when no binary is available. Installation and upgrade behavior still require testing in 1Panel.
 
 See the [packaging specification](1Panel本地应用制作规范.md) before adding an application.
 
