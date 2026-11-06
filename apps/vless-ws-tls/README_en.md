@@ -5,9 +5,9 @@ A VLESS + WebSocket proxy powered by [sing-box](https://sing-box.sagernet.org/),
 ## Installation and usage
 
 1. Prepare a domain pointing to the server with an HTTPS certificate configured.
-2. Install `1.0.5`, enter the domain, and keep the default port and WS path. Leave the SOCKS5 fields empty for direct access. For a proxy, enter its host and port, with credentials if required.
+2. Install `1.0.6`, enter the domain, and keep the default port and WS path. Leave the SOCKS5 fields empty for direct access. For a proxy, enter its host and port, with credentials if required.
 3. Add the reverse proxy configuration below to the domain's HTTPS site.
-4. After startup, open `data/client.txt` in the instance directory and import the link into your client. The default node name is `VLESS-WS-TLS`, and the client connects on port `443`.
+4. After startup, open `data/client.txt` in the instance directory and import the link into your client, which connects on port `443`. The node name uses the first part of the domain: `hk.example.com` becomes `hk`, and `example.com` becomes `example`.
 
 ## Reverse proxy
 

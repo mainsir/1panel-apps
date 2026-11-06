@@ -12,7 +12,7 @@ import unittest
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
-ENTRY = ROOT / 'apps/vless-ws-tls/1.0.5/scripts/entrypoint.sh'
+ENTRY = ROOT / 'apps/vless-ws-tls/1.0.6/scripts/entrypoint.sh'
 MOCK = '''#!/bin/sh
 case "$1 $2" in
   'generate uuid') echo 11111111-1111-4111-8111-111111111111 ;;
@@ -155,7 +155,7 @@ class RealSingBoxTests(unittest.TestCase):
         self.assertEqual(outbound['password'], '中文"\\password')
 
     def test_current_ws_config_keeps_loopback_and_uuid(self):
-        entry = ROOT / 'apps/vless-ws-tls/1.0.5/scripts/entrypoint.sh'
+        entry = ROOT / 'apps/vless-ws-tls/1.0.6/scripts/entrypoint.sh'
         self.generate(entry=entry, PUBLIC_HOST='cdn.example.com')
         keys = (self.data / 'keys.env').read_bytes()
         self.generate(entry=entry, PUBLIC_HOST='cdn.example.com', WS_PATH='/changed')
@@ -360,7 +360,7 @@ class SocksPackageTests(unittest.TestCase):
 
 
 class WsEntrypointTests(unittest.TestCase):
-    default_link_name = 'VLESS-WS-TLS'
+    default_link_name = 'cdn'
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -372,7 +372,7 @@ class WsEntrypointTests(unittest.TestCase):
         mock.write_text(MOCK)
         mock.chmod(0o755)
         self.data = self.work / 'data'
-        self.entry = ROOT / 'apps/vless-ws-tls/1.0.5/scripts/entrypoint.sh'
+        self.entry = ROOT / 'apps/vless-ws-tls/1.0.6/scripts/entrypoint.sh'
 
     def start(self, **values):
         cleared = (
@@ -457,8 +457,36 @@ class WsEntrypointTests(unittest.TestCase):
         self.assertEqual(parsed.port, 443)
         self.assertEqual(unquote(parse_qs(parsed.query)['path'][0]), '/cdn-cgi/custom')
         self.assertEqual(unquote(parse_qs(parsed.query)['sni'][0]), '2001:db8::1')
-        self.assertEqual(unquote(parsed.fragment), self.default_link_name)
+        self.assertEqual(unquote(parsed.fragment), '2001:db8::1')
         self.assertIn('本机入站: 127.0.0.1:18443', (self.data / 'client.txt').read_text())
+
+    def test_node_name_uses_domain_prefix_without_changing_uuid(self):
+        self.data.mkdir()
+        uuid = '22222222-2222-4222-8222-222222222222'
+        keys = self.data / 'keys.env'
+        original = f'SB_UUID={uuid}\n'
+        keys.write_text(original)
+        modified = keys.stat().st_mtime_ns
+        cases = [
+            ('hk.example.com', 'hk'),
+            (' example.com ', 'example'),
+            ('us01.example.com', 'us01'),
+            ('hk.edge.example.com', 'hk'),
+            ('example.co.uk', 'example'),
+            ('hk-01.example.com', 'hk-01'),
+            ('192.0.2.10', '192.0.2.10'),
+            ('[2001:db8::1]', '2001:db8::1'),
+        ]
+        for host, name in cases:
+            with self.subTest(host=host):
+                result = self.start(PUBLIC_HOST=host, CONTAINER_NAME='docker-name',
+                                    LINK_NAME='manual-name')
+                self.assertEqual(result.returncode, 0, result.stderr)
+                link = urlsplit(self.link())
+                self.assertEqual(unquote(link.fragment), name)
+                self.assertEqual(link.username, uuid)
+                self.assertEqual(keys.read_text(), original)
+                self.assertEqual(keys.stat().st_mtime_ns, modified)
 
     def test_uuid_persists_across_parameter_changes_and_old_reality_keys(self):
         self.data.mkdir()
@@ -611,7 +639,7 @@ class WsEntrypointTests(unittest.TestCase):
 class WsPackageTests(unittest.TestCase):
     def setUp(self):
         self.app = ROOT / 'apps/vless-ws-tls'
-        self.version = self.app / '1.0.5'
+        self.version = self.app / '1.0.6'
 
     def test_compose_matches_form_and_drops_reality(self):
         import yaml
@@ -665,13 +693,13 @@ class WsPackageTests(unittest.TestCase):
             self.assertIn('proxy_set_header Upgrade $http_upgrade', text)
             self.assertIn('WebSocket', text)
         self.assertIn('VLESS WS TLS', (ROOT / 'README.md').read_text())
-        self.assertEqual({p.name for p in self.app.iterdir() if p.is_dir()}, {'1.0.5'})
+        self.assertEqual({p.name for p in self.app.iterdir() if p.is_dir()}, {'1.0.6'})
 
 
 class WsCurrentFormTests(unittest.TestCase):
     def setUp(self):
         self.app = ROOT / 'apps/vless-ws-tls'
-        self.version = self.app / '1.0.5'
+        self.version = self.app / '1.0.6'
 
     def test_form_drops_tz_listen_host_and_link_name(self):
         import yaml
@@ -712,16 +740,15 @@ class WsCurrentFormTests(unittest.TestCase):
         self.assertEqual(fields['SOCKS5_PASS']['type'], 'password')
         entry = (self.version / 'scripts/entrypoint.sh').read_text()
         self.assertIn('\nLISTEN_HOST=127.0.0.1\n', entry)
-        self.assertIn('\nLINK_NAME=VLESS-WS-TLS\n', entry)
         self.assertNotIn('load_panel_value LISTEN_HOST', entry)
         self.assertNotIn('load_panel_value LINK_NAME', entry)
         self.assertNotIn('TZ', entry)
         self.assertTrue(os.access(self.version / 'scripts/entrypoint.sh', os.X_OK))
         for name in ('README.md', 'README_en.md'):
             text = (self.app / name).read_text()
-            self.assertIn('1.0.5', text)
+            self.assertIn('1.0.6', text)
             self.assertIn('127.0.0.1', text)
-            self.assertIn('VLESS-WS-TLS', text)
+            self.assertIn('hk.example.com', text)
             self.assertNotIn('Asia/Shanghai', text)
 
 

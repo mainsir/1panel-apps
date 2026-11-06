@@ -137,8 +137,12 @@ case "$WS_PATH" in
   *) WS_PATH="/$WS_PATH" ;;
 esac
 
-# Fixed client remark. Not a form field.
-LINK_NAME=VLESS-WS-TLS
+# Use the domain's first label as the client remark; keep IP addresses intact.
+case "$PUBLIC_HOST" in
+  *:*) LINK_NAME=$PUBLIC_HOST ;;
+  *[!0-9.]*) LINK_NAME=${PUBLIC_HOST%%.*} ;;
+  *) LINK_NAME=$PUBLIC_HOST ;;
+esac
 
 SOCKS5_HOST=$(trim "${SOCKS5_HOST:-}")
 SOCKS5_PORT=$(trim "${SOCKS5_PORT:-}")
