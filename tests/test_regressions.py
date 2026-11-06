@@ -695,8 +695,8 @@ class WsCurrentFormTests(unittest.TestCase):
         self.assertEqual(fields['PANEL_APP_PORT_TCP']['type'], 'number')
         self.assertEqual(fields['PANEL_APP_PORT_TCP']['rule'], 'paramPort')
         socks = {
-            'SOCKS5_HOST': ('SOCKS5 地址（可选）', 'SOCKS5 host (optional)'),
-            'SOCKS5_PORT': ('SOCKS5 端口（可选）', 'SOCKS5 port (optional)'),
+            'SOCKS5_HOST': ('SOCKS5 出口地址（可选）', 'SOCKS5 egress host (optional)'),
+            'SOCKS5_PORT': ('端口（可选）', 'Port (optional)'),
             'SOCKS5_USER': ('SOCKS5 账号（可选）', 'SOCKS5 username (optional)'),
             'SOCKS5_PASS': ('SOCKS5 密码（可选）', 'SOCKS5 password (optional)'),
         }

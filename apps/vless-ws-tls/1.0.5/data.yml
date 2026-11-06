@@ -14,11 +14,8 @@ additionalProperties:
     - default: 18443
       edit: true
       envKey: PANEL_APP_PORT_TCP
-      labelZh: 本机端口（默认即可）
-      labelEn: Local port (keep default)
-      description:
-        zh: 反向代理的目标端口，客户端使用 443。
-        en: Target port for the reverse proxy. Clients use port 443.
+      labelZh: 本机端口（反向代理目标，客户端使用 443）
+      labelEn: Local port (reverse proxy target; clients use 443)
       required: true
       rule: paramPort
       type: number
@@ -26,27 +23,24 @@ additionalProperties:
     - default: /cdn-cgi/assets/v7kQm2pLx9nR
       edit: true
       envKey: WS_PATH
-      labelZh: WS 路径（默认即可）
-      labelEn: WS path (keep default)
-      description:
-        zh: 需与反向代理的路径配置一致。
-        en: Must match the path configured in the reverse proxy.
+      labelZh: WS 路径（须与反向代理一致）
+      labelEn: WS path (must match the reverse proxy)
       required: true
       type: text
 
     - default: ""
       edit: true
       envKey: SOCKS5_HOST
-      labelZh: SOCKS5 地址（可选）
-      labelEn: SOCKS5 host (optional)
+      labelZh: SOCKS5 出口地址（可选）
+      labelEn: SOCKS5 egress host (optional)
       required: false
       type: text
 
     - default: ""
       edit: true
       envKey: SOCKS5_PORT
-      labelZh: SOCKS5 端口（可选）
-      labelEn: SOCKS5 port (optional)
+      labelZh: 端口（可选）
+      labelEn: Port (optional)
       required: false
       type: text
 
