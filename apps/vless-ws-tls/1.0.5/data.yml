@@ -11,8 +11,8 @@ additionalProperties:
     - default: 18443
       edit: true
       envKey: PANEL_APP_PORT_TCP
-      labelZh: 本机端口（反向代理目标，客户端使用 443）
-      labelEn: Local port (reverse proxy target; clients use 443)
+      labelZh: 本机端口（反向代理使用）
+      labelEn: Local port (for the reverse proxy)
       required: true
       rule: paramPort
       type: number
