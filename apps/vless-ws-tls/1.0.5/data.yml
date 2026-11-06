@@ -36,8 +36,8 @@ additionalProperties:
     - default: ""
       edit: true
       envKey: SOCKS5_PORT
-      labelZh: 端口（可选）
-      labelEn: Port (optional)
+      labelZh: SOCKS5 端口（可选）
+      labelEn: SOCKS5 port (optional)
       required: false
       type: text
 
